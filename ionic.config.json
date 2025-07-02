@@ -1,0 +1,7 @@
+{
+  "name": "Ciemi_mobile",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular-standalone"
+}
