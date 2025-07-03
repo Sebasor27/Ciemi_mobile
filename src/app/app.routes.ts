@@ -14,4 +14,17 @@ export const routes: Routes = [
     path: 'login',
     loadComponent: () => import('./pages/login/login.page').then(m => m.LoginPage)
   },
+  {
+    path: 'historico',
+    loadComponent: () => import('./pages/historico/historico.page').then( m => m.HistoricoPage)
+  },
+  {
+    path: 'registro-emp',
+    loadComponent: () => import('./pages/registro-emp/registro-emp.page').then( m => m.RegistroEmpPage)
+  },
+  {
+    path: 'reporteria',
+    loadComponent: () => import('./pages/reporteria/reporteria.page').then( m => m.ReporteriaPage)
+  },
+
 ];
