@@ -1,0 +1,50 @@
+/* Estilo para elementos inactivos */
+.inactive {
+  opacity: 0.7;
+  background: rgba(var(--ion-color-light-rgb), 0.4);
+}
+
+/* Espaciado para los botones */
+ion-buttons {
+  display: flex;
+  gap: 6px; /* Espacio entre botones */
+  padding: 0 1px; /* Espacio interno */
+
+}
+
+/* Centrado del spinner de carga */
+ion-spinner {
+  margin: auto;
+  display: block;
+}
+
+/* Estilo para los badges */
+ion-badge {
+  margin-top: 4px;
+}
+/* Estilo para el botón de Detalles */
+.btn-detalle {
+  --color: #3880ff;  /* Azul (primary) */
+  --color-hover: #1a56db;  /* Azul más oscuro al pasar el mouse */
+  opacity: 1;  /* Siempre visible (incluso si está deshabilitado) */
+
+}
+
+/* Estilo para el botón de Inactivar (cuando está activo) */
+.btn-inactivar {
+  --color: #eb445a;  /* Rojo (danger) */
+  --color-hover: #c82333;  /* Rojo más oscuro al pasar el mouse */
+  opacity: 0.8;  /* Opacidad reducida para distinguirlo */
+}
+
+/* Estilo para el botón de Activar (cuando está inactivo) */
+.btn-activar {
+  --color: #2dd36f;  /* Verde (success) */
+  --color-hover: #1da050;  /* Verde más oscuro al pasar el mouse */
+  opacity: 0.8;  
+}
+
+.btn-inactivar, .btn-activar, .btn-detalle {
+  border: 1px solid rgba(0, 0, 0, 0.1); 
+  border-radius: 50%; 
+}

@@ -1,0 +1,41 @@
+ion-card {
+  margin: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+ion-card-header {
+  background: var(--ion-color-primary);
+  color: white;
+}
+
+ion-card-title {
+  color: white;
+  font-size: 1.2rem;
+}
+
+ion-item {
+  --padding-start: 0;
+  --inner-padding-end: 0;
+  margin-bottom: 12px;
+}
+
+ion-label[position="stacked"] {
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+ion-toggle {
+  padding-right: 0;
+}
+
+ion-spinner {
+  margin: 24px auto;
+}
+
+ion-grid {
+  margin-bottom: 16px;
+}
+
+ion-row {
+  margin-bottom: 8px;
+}

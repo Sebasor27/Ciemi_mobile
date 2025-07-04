@@ -1,13 +1,99 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>historico</ion-title>
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-title>Histórico de Emprendedores</ion-title>
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">historico</ion-title>
-    </ion-toolbar>
-  </ion-header>
+<ion-content>
+  <!-- Barra de búsqueda -->
+  <ion-searchbar
+    [(ngModel)]="searchTerm"
+    placeholder="Buscar por nombre o correo"
+    debounce="300"
+  ></ion-searchbar>
+
+  <!-- Botón para añadir nuevo -->
+  <ion-button
+    expand="block"
+    fill="solid"
+    color="secondary"
+    routerLink="/registro-emp"
+    class="ion-margin"
+  >
+    <ion-icon name="add" slot="start"></ion-icon>
+    Añadir Emprendedor
+  </ion-button>
+
+  <!-- Lista de emprendedores -->
+  <ion-list *ngIf="!loading; else loadingState">
+    <ion-item-group *ngIf="filtrarEmprendedores().length > 0; else emptyState">
+      <ion-item
+        *ngFor="let emp of filtrarEmprendedores()"
+        [class.inactive]="!emp.estado"
+      >
+        <ion-label>
+          <h2>{{emp.nombre}}</h2>
+          <p>{{emp.correo || 'Sin correo registrado'}}</p>
+          <p>
+            <ion-badge [color]="emp.estado ? 'success' : 'danger'">
+              {{emp.estado ? 'Activo' : formatearFecha(emp.fechaInactivacion)}}
+            </ion-badge>
+          </p>
+        </ion-label>
+
+        <ion-buttons slot="end">
+          <!-- Botón de detalles -->
+          <ion-button
+            fill="clear"
+            color="primary"
+            (click)="verDetalles(emp.idEmprendedor)"
+            [disabled]="!emp.estado"
+            class="btn-detalle"
+          >
+            <ion-icon name="eye" slot="icon-only"></ion-icon>
+          </ion-button>
+
+          <!-- Botón de inactivar (si está activo) -->
+          <ion-button
+            *ngIf="emp.estado; else activateBtn"
+            fill="clear"
+            color="danger"
+            (click)="inactivarEmprendedor(emp.idEmprendedor)"
+            class="btn-inactivar"
+          >
+            <ion-icon name="power" slot="icon-only"></ion-icon>
+          </ion-button>
+
+          <!-- Botón de activar (si está inactivo) -->
+          <ng-template #activateBtn>
+            <ion-button
+              fill="clear"
+              color="success"
+              (click)="activarEmprendedor(emp.idEmprendedor)"
+              class="btn-activar"
+            >
+              <ion-icon name="refresh" slot="icon-only"></ion-icon>
+            </ion-button>
+          </ng-template>
+        </ion-buttons>
+      </ion-item>
+    </ion-item-group>
+
+    <!-- Estado vacío -->
+    <ng-template #emptyState>
+      <ion-item>
+        <ion-label class="ion-text-center"
+          >No se encontraron emprendedores</ion-label
+        >
+      </ion-item>
+    </ng-template>
+  </ion-list>
+
+  <!-- Estado de carga -->
+  <ng-template #loadingState>
+    <div class="ion-text-center ion-padding">
+      <ion-spinner></ion-spinner>
+      <p>Cargando emprendedores...</p>
+    </div>
+  </ng-template>
 </ion-content>

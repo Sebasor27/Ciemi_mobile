@@ -1,0 +1,323 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/historico"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Detalles del Emprendedor</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <div *ngIf="loading" class="ion-padding ion-text-center">
+    <ion-spinner></ion-spinner>
+    <p>Cargando información...</p>
+  </div>
+
+  <div *ngIf="error && !loading" class="ion-padding ion-text-center">
+    <ion-icon name="warning" size="large" color="danger"></ion-icon>
+    <p>Error al cargar los datos</p>
+  </div>
+
+  <div *ngIf="emprendedor && !loading" class="ion-padding">
+    <ion-grid>
+      <ion-row>
+        <ion-col>
+          <ion-button
+            expand="block"
+            (click)="isEditing ? cancelEdit() : toggleEdit()"
+          >
+            <ion-icon [name]="isEditing ? 'close' : 'create'" slot="start">
+            </ion-icon>
+            {{ isEditing ? 'Cancelar' : 'Editar' }}
+          </ion-button>
+        </ion-col>
+        <ion-col>
+          <ion-button
+            expand="block"
+            color="secondary"
+            (click)="navigateToEncuestas()"
+          >
+            <ion-icon name="list" slot="start"></ion-icon>
+            Ver Encuestas
+          </ion-button>
+        </ion-col>
+        <ion-col *ngIf="isEditing">
+          <ion-button expand="block" color="success" (click)="saveChanges()">
+            <ion-icon name="save" slot="start"></ion-icon>
+            Guardar
+          </ion-button>
+        </ion-col>
+      </ion-row>
+    </ion-grid>
+
+    <!-- Detalles Emprendedor -->
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>Información General</ion-card-title>
+      </ion-card-header>
+
+      <ion-card-content>
+        <ion-list>
+          <!-- Nombre -->
+          <ion-item>
+            <ion-label position="stacked">Nombres y Apellidos</ion-label>
+            <ion-input
+              *ngIf="isEditing"
+              [(ngModel)]="editedEmprendedor.nombre"
+              name="nombre"
+              (ionChange)="handleInputChange($event, 'nombre')"
+            >
+            </ion-input>
+            <ion-text *ngIf="!isEditing">{{ emprendedor.nombre }}</ion-text>
+          </ion-item>
+
+          <!-- Edad -->
+          <ion-item>
+            <ion-label position="stacked">Edad</ion-label>
+            <ion-input
+              *ngIf="isEditing"
+              type="number"
+              [(ngModel)]="editedEmprendedor.edad"
+              name="edad"
+              (ionChange)="handleInputChange($event, 'edad')"
+            >
+            </ion-input>
+            <ion-text *ngIf="!isEditing">{{ emprendedor.edad }}</ion-text>
+          </ion-item>
+
+          <!-- Nivel de Estudio -->
+          <ion-item>
+            <ion-label position="stacked">Nivel de Estudio</ion-label>
+            <ion-select
+              *ngIf="isEditing"
+              [(ngModel)]="editedEmprendedor.nivelEstudio"
+              name="nivelEstudio"
+              (ionChange)="handleInputChange($event, 'nivelEstudio')"
+              interface="action-sheet"
+            >
+              <ion-select-option
+                *ngFor="let opcion of opcionesNivelEstudio"
+                [value]="opcion"
+              >
+                {{ opcion }}
+              </ion-select-option>
+            </ion-select>
+            <ion-text *ngIf="!isEditing"
+              >{{ emprendedor.nivelEstudio }}</ion-text
+            >
+          </ion-item>
+
+          <!-- Trabajo en Relación de Dependencia -->
+          <ion-item>
+            <ion-label>Trabajo en Relación de Dependencia</ion-label>
+            <ion-toggle
+              *ngIf="isEditing"
+              [(ngModel)]="editedEmprendedor.trabajoRelacionDependencia"
+              name="trabajoRelacionDependencia"
+              (ionChange)="handleInputChange($event, 'trabajoRelacionDependencia')"
+            >
+            </ion-toggle>
+            <ion-text *ngIf="!isEditing">
+              {{ emprendedor.trabajoRelacionDependencia ? 'Sí' : 'No' }}
+            </ion-text>
+          </ion-item>
+
+          <!-- Rango de Sueldo -->
+          <ion-item>
+            <ion-label position="stacked">Rango de Sueldo</ion-label>
+            <ion-select
+              *ngIf="isEditing"
+              [(ngModel)]="editedEmprendedor.sueldoMensual"
+              name="sueldoMensual"
+              (ionChange)="handleInputChange($event, 'sueldoMensual')"
+              interface="action-sheet"
+            >
+              <ion-select-option
+                *ngFor="let opcion of opcionesRangoSueldo"
+                [value]="opcion"
+              >
+                {{ opcion }}
+              </ion-select-option>
+            </ion-select>
+            <ion-text *ngIf="!isEditing"
+              >{{ emprendedor.sueldoMensual }}</ion-text
+            >
+          </ion-item>
+
+          <!-- RUC -->
+          <ion-item>
+            <ion-label position="stacked">RUC</ion-label>
+            <ion-input
+              *ngIf="isEditing"
+              [(ngModel)]="editedEmprendedor.ruc"
+              name="ruc"
+              (ionChange)="handleInputChange($event, 'ruc')"
+            >
+            </ion-input>
+            <ion-text *ngIf="!isEditing">{{ emprendedor.ruc }}</ion-text>
+          </ion-item>
+
+          <!-- Empleados Hombres -->
+          <ion-item>
+            <ion-label position="stacked">Empleados Hombres</ion-label>
+            <ion-input
+              *ngIf="isEditing"
+              type="number"
+              [(ngModel)]="editedEmprendedor.empleadosHombres"
+              name="empleadosHombres"
+              (ionChange)="handleInputChange($event, 'empleadosHombres')"
+            >
+            </ion-input>
+            <ion-text *ngIf="!isEditing">
+              {{ emprendedor.empleadosHombres }} empleados hombres
+            </ion-text>
+          </ion-item>
+
+          <!-- Empleados Mujeres -->
+          <ion-item>
+            <ion-label position="stacked">Empleados Mujeres</ion-label>
+            <ion-input
+              *ngIf="isEditing"
+              type="number"
+              [(ngModel)]="editedEmprendedor.empleadosMujeres"
+              name="empleadosMujeres"
+              (ionChange)="handleInputChange($event, 'empleadosMujeres')"
+            >
+            </ion-input>
+            <ion-text *ngIf="!isEditing">
+              {{ emprendedor.empleadosMujeres }} empleadas mujeres
+            </ion-text>
+          </ion-item>
+
+          <!-- Rango de Edad de Empleados -->
+          <ion-item>
+            <ion-label position="stacked">Rango de Edad de Empleados</ion-label>
+            <ion-select
+              *ngIf="isEditing"
+              [(ngModel)]="editedEmprendedor.rangoEdadEmpleados"
+              name="rangoEdadEmpleados"
+              (ionChange)="handleInputChange($event, 'rangoEdadEmpleados')"
+              interface="action-sheet"
+            >
+              <ion-select-option
+                *ngFor="let opcion of opcionesRangoEdad"
+                [value]="opcion"
+              >
+                {{ opcion }}
+              </ion-select-option>
+            </ion-select>
+            <ion-text *ngIf="!isEditing"
+              >{{ emprendedor.rangoEdadEmpleados }}</ion-text
+            >
+          </ion-item>
+
+          <!-- Tipo de Empresa -->
+          <ion-item>
+            <ion-label position="stacked">Tipo de Empresa</ion-label>
+            <ion-select
+              *ngIf="isEditing"
+              [(ngModel)]="editedEmprendedor.tipoEmpresa"
+              name="tipoEmpresa"
+              (ionChange)="handleInputChange($event, 'tipoEmpresa')"
+              interface="action-sheet"
+            >
+              <ion-select-option
+                *ngFor="let opcion of opcionesTipoEmpresa"
+                [value]="opcion"
+              >
+                {{ opcion }}
+              </ion-select-option>
+            </ion-select>
+            <ion-text *ngIf="!isEditing"
+              >{{ emprendedor.tipoEmpresa || 'No especificado' }}</ion-text
+            >
+          </ion-item>
+
+          <!-- Año de Creación -->
+          <ion-item>
+            <ion-label position="stacked">Año de Creación</ion-label>
+            <ion-input
+              *ngIf="isEditing"
+              type="number"
+              [(ngModel)]="editedEmprendedor.anoCreacionEmpresa"
+              name="anoCreacionEmpresa"
+              (ionChange)="handleInputChange($event, 'anoCreacionEmpresa')"
+            >
+            </ion-input>
+            <ion-text *ngIf="!isEditing"
+              >{{ emprendedor.anoCreacionEmpresa }}</ion-text
+            >
+          </ion-item>
+
+          <!-- Dirección -->
+          <ion-item>
+            <ion-label position="stacked">Dirección</ion-label>
+            <ion-input
+              *ngIf="isEditing"
+              [(ngModel)]="editedEmprendedor.direccion"
+              name="direccion"
+              (ionChange)="handleInputChange($event, 'direccion')"
+            >
+            </ion-input>
+            <ion-text *ngIf="!isEditing">{{ emprendedor.direccion }}</ion-text>
+          </ion-item>
+
+          <!-- Teléfono -->
+          <ion-item>
+            <ion-label position="stacked">Teléfono</ion-label>
+            <ion-input
+              *ngIf="isEditing"
+              type="tel"
+              [(ngModel)]="editedEmprendedor.telefono"
+              name="telefono"
+              (ionChange)="handleInputChange($event, 'telefono')"
+            >
+            </ion-input>
+            <ion-text *ngIf="!isEditing">{{ emprendedor.telefono }}</ion-text>
+          </ion-item>
+
+          <!-- Celular -->
+          <ion-item>
+            <ion-label position="stacked">Celular</ion-label>
+            <ion-input
+              *ngIf="isEditing"
+              type="tel"
+              [(ngModel)]="editedEmprendedor.celular"
+              name="celular"
+              (ionChange)="handleInputChange($event, 'celular')"
+            >
+            </ion-input>
+            <ion-text *ngIf="!isEditing">{{ emprendedor.celular }}</ion-text>
+          </ion-item>
+
+          <!-- Correo -->
+          <ion-item>
+            <ion-label position="stacked">Correo</ion-label>
+            <ion-input
+              *ngIf="isEditing"
+              type="email"
+              [(ngModel)]="editedEmprendedor.correo"
+              name="correo"
+              (ionChange)="handleInputChange($event, 'correo')"
+            >
+            </ion-input>
+            <ion-text *ngIf="!isEditing">{{ emprendedor.correo }}</ion-text>
+          </ion-item>
+
+          <!-- Cédula -->
+          <ion-item>
+            <ion-label position="stacked">Cédula</ion-label>
+            <ion-input
+              *ngIf="isEditing"
+              [(ngModel)]="editedEmprendedor.cedula"
+              name="cedula"
+              (ionChange)="handleInputChange($event, 'cedula')"
+            >
+            </ion-input>
+            <ion-text *ngIf="!isEditing">{{ emprendedor.cedula }}</ion-text>
+          </ion-item>
+        </ion-list>
+      </ion-card-content>
+    </ion-card>
+  </div>
+</ion-content>
