@@ -41,4 +41,8 @@ updateEmprendedor(id: number, data: any) {
 getEncuestasEmprendedor(id: number) {
   return this.http.get(`${this.baseUrl}/Emprendedores/${id}/encuestas`);
 }
+// Crea nuevo emprendedor
+createEmprendedor(data: any) {
+  return this.http.post(`${this.baseUrl}/Emprendedores`, data);
+}
 }

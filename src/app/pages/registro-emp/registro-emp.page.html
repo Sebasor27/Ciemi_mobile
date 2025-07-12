@@ -1,13 +1,176 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>RegistroEmp</ion-title>
-  </ion-toolbar>
-</ion-header>
-
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
+<ion-content>
+  <ion-header>
     <ion-toolbar>
-      <ion-title size="large">RegistroEmp</ion-title>
+      <ion-title>Registro Emprendedor</ion-title>
     </ion-toolbar>
   </ion-header>
+
+  <form (ngSubmit)="registrarEmprendedor()" style="padding: 1rem">
+    <ion-item>
+      <ion-label position="floating">Nombre</ion-label>
+      <ion-input
+        [(ngModel)]="emprendedor.nombre"
+        name="nombre"
+        required
+      ></ion-input>
+    </ion-item>
+
+    <ion-item>
+      <ion-label position="floating">Edad</ion-label>
+      <ion-input
+        [(ngModel)]="emprendedor.edad"
+        name="edad"
+        required
+      ></ion-input>
+    </ion-item>
+
+    <ion-item>
+      <ion-label position="floating">Nivel de Estudio</ion-label>
+      <ion-select
+        [(ngModel)]="emprendedor.nivelEstudio"
+        name="nivelEstudio"
+        required
+      >
+        <ion-select-option
+          *ngFor="let nivel of opcionesNivelEstudio"
+          [value]="nivel"
+          >{{ nivel }}</ion-select-option
+        >
+      </ion-select>
+    </ion-item>
+
+    <ion-item>
+      <ion-label>Trabajo en relación dependencia</ion-label>
+      <ion-checkbox
+        slot="end"
+        [(ngModel)]="emprendedor.trabajoRelacionDependencia"
+        name="trabajoRelacionDependencia"
+      ></ion-checkbox>
+    </ion-item>
+
+    <ion-item>
+      <ion-label position="floating">Sueldo Mensual</ion-label>
+      <ion-select
+        [(ngModel)]="emprendedor.sueldoMensual"
+        name="sueldoMensual"
+        required
+      >
+        <ion-select-option
+          *ngFor="let sueldo of opcionesRangoSueldo"
+          [value]="sueldo"
+          >{{ sueldo }}</ion-select-option
+        >
+      </ion-select>
+    </ion-item>
+
+    <ion-item>
+      <ion-label position="floating">RUC</ion-label>
+      <ion-input [(ngModel)]="emprendedor.ruc" name="ruc"></ion-input>
+    </ion-item>
+
+    <ion-item>
+      <ion-label position="floating">Empleados Hombres</ion-label>
+      <ion-input
+        type="number"
+        [(ngModel)]="emprendedor.empleadosHombres"
+        name="empleadosHombres"
+        required
+      ></ion-input>
+    </ion-item>
+
+    <ion-item>
+      <ion-label position="floating">Empleados Mujeres</ion-label>
+      <ion-input
+        type="number"
+        [(ngModel)]="emprendedor.empleadosMujeres"
+        name="empleadosMujeres"
+        required
+      ></ion-input>
+    </ion-item>
+
+    <ion-item>
+      <ion-label position="floating">Rango Edad Empleados</ion-label>
+      <ion-select
+        [(ngModel)]="emprendedor.rangoEdadEmpleados"
+        name="rangoEdadEmpleados"
+      >
+        <ion-select-option
+          *ngFor="let rango of opcionesRangoEdad"
+          [value]="rango"
+          >{{ rango }}</ion-select-option
+        >
+      </ion-select>
+    </ion-item>
+
+    <ion-item>
+      <ion-label position="floating">Tipo de Empresa</ion-label>
+      <ion-select
+        [(ngModel)]="emprendedor.tipoEmpresa"
+        name="tipoEmpresa"
+        required
+      >
+        <ion-select-option
+          *ngFor="let tipo of opcionesTipoEmpresa"
+          [value]="tipo"
+          >{{ tipo }}</ion-select-option
+        >
+      </ion-select>
+    </ion-item>
+
+    <ion-item>
+      <ion-label position="floating">Año de Creación</ion-label>
+      <ion-input
+        type="number"
+        [(ngModel)]="emprendedor.anoCreacionEmpresa"
+        name="anoCreacionEmpresa"
+        required
+      ></ion-input>
+    </ion-item>
+
+    <ion-item>
+      <ion-label position="floating">Dirección</ion-label>
+      <ion-input
+        [(ngModel)]="emprendedor.direccion"
+        name="direccion"
+        required
+      ></ion-input>
+    </ion-item>
+
+    <ion-item>
+      <ion-label position="floating">Teléfono</ion-label>
+      <ion-input [(ngModel)]="emprendedor.telefono" name="telefono"></ion-input>
+    </ion-item>
+
+    <ion-item>
+      <ion-label position="floating">Celular</ion-label>
+      <ion-input
+        [(ngModel)]="emprendedor.celular"
+        name="celular"
+        required
+      ></ion-input>
+    </ion-item>
+
+    <ion-item>
+      <ion-label position="floating">Correo</ion-label>
+      <ion-input
+        type="email"
+        [(ngModel)]="emprendedor.correo"
+        name="correo"
+        required
+      ></ion-input>
+    </ion-item>
+
+    <ion-item>
+      <ion-label position="floating">Cédula</ion-label>
+      <ion-input
+        [(ngModel)]="emprendedor.cedula"
+        name="cedula"
+        required
+      ></ion-input>
+    </ion-item>
+
+    <div style="margin-top: 1rem; text-align: center">
+      <ion-button expand="block" type="submit">Registrar</ion-button>
+    </div>
+  </form>
 </ion-content>
