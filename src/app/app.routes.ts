@@ -30,5 +30,23 @@ export const routes: Routes = [
     path: 'detalle-emp/:id',
     loadComponent: () => import('./pages/detalle-emp/detalle-emp.page').then( m => m.DetalleEmpPage)
   },
+  {
+    path: 'ventana-encuestas/:id',  
+    loadComponent: () => import('./pages/ventana-encuestas/ventana-encuestas.page').then( m => m.VentanaEncuestasPage)
+  },
+  // Rutas corregidas para las encuestas con parámetro id
+  {
+    path: 'encuesta-iepm/:id',
+    loadComponent: () => import('./pages/encuesta-iepm/encuesta-iepm.page').then( m => m.EncuestaIEPMPage)
+  },
+  {
+    path: 'encuesta-ice/:id',
+    loadComponent: () => import('./pages/encuesta-ice/encuesta-ice.page').then( m => m.EncuestaICEPage)
+  },
+  // Ruta para resultados
+  /*{
+    path: 'resultados/:id',
+    loadComponent: () => import('./pages/resultados/resultados.page').then( m => m.ResultadosPage)
+  }*/
 
 ];
