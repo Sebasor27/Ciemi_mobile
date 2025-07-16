@@ -1,0 +1,222 @@
+/* Contenedor principal del ICE */
+.ice-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 40px 20px;
+  background-color: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  font-family: "Arial", sans-serif;
+  min-height: 100vh;
+}
+
+/* Tipo de encuesta - texto principal */
+.ice-survey-type {
+  font-size: 18px;
+  color: #333333;
+  text-align: center;
+  margin-bottom: 20px;
+  font-weight: bold;
+}
+
+/* Etiqueta de competencia - texto secundario */
+.ice-category-label {
+  font-size: 16px;
+  color: #9e1b32;
+  text-align: left;
+  margin-bottom: 30px;
+  font-weight: bold;
+}
+
+.ice-instructions {
+  font-size: 15px;
+  color: #000000;
+  text-align: left;
+  margin-bottom: 30px;
+  font-weight: bold;
+}
+
+.ice-instructions-scale {
+  font-size: 18px;
+  color: #000000;
+  text-align: left;
+  margin-bottom: 30px;
+  font-weight: bold;
+}
+
+/* Bloque de preguntas - cada pregunta */
+.ice-question-block {
+  margin-bottom: 25px;
+  padding: 15px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  }
+}
+
+/* Texto de la pregunta */
+.ice-question-text {
+  font-size: 16px;
+  color: #444444;
+  margin-bottom: 15px;
+  text-align: left;
+}
+
+.ice-answers-container {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  flex-wrap: wrap;
+}
+
+.ice-answer-circle {
+  width: 50px;
+  height: 50px;
+  border: 2px solid #034C53;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.3s, border-color 0.3s, transform 0.2s;
+  position: relative;
+  
+  &:hover {
+    background-color: #e6f2ff;
+    border-color: #3D8D7A;
+    transform: scale(1.1);
+  }
+
+  &.ice-selected {
+    background-color: #034C53;
+    border-color: #6A9C89;
+    color: #ffffff;
+  }
+}
+
+/* Etiqueta dentro del círculo - número de respuesta */
+.ice-answer-label {
+  font-size: 16px;
+  color: inherit;
+  font-weight: bold;
+}
+
+/* Contenedor de cada respuesta (círculo + etiqueta) */
+.ice-answer-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+
+/* Etiqueta de la escala */
+.ice-scale-label {
+  font-size: 14px;
+  color: #034C53;
+  font-weight: bold;
+  text-align: center;
+  max-width: 80px;
+  word-wrap: break-word;
+}
+
+/* Navegación de botones */
+.ice-navigation-buttons {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 30px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* Botones personalizados */
+.ice-next-button {
+  --background: #140E4E;
+  --background-hover: #0056b3;
+  --color: #ffffff;
+  --border-radius: 5px;
+  --padding-start: 20px;
+  --padding-end: 20px;
+  --padding-top: 10px;
+  --padding-bottom: 10px;
+  font-size: 14px;
+  margin-left: auto;
+}
+
+.ice-prev-button {
+  --background: #3424bd;
+  --background-hover: #0056b3;
+  --color: #ffffff;
+  --border-radius: 5px;
+  --padding-start: 20px;
+  --padding-end: 20px;
+  --padding-top: 10px;
+  --padding-bottom: 10px;
+  font-size: 14px;
+  margin-right: auto;
+}
+
+.ice-finalizar-button {
+  --background: #28a745;
+  --background-hover: #218838;
+  --color: #ffffff;
+  --border-radius: 5px;
+  --padding-start: 20px;
+  --padding-end: 20px;
+  --padding-top: 10px;
+  --padding-bottom: 10px;
+  font-size: 14px;
+  margin: 0 auto;
+}
+
+/* Progreso */
+.ice-progress {
+  text-align: center;
+  font-size: 16px;
+  color: #666666;
+  font-weight: bold;
+  margin-top: 20px;
+}
+
+/* Responsividad */
+@media (max-width: 768px) {
+  .ice-container {
+    padding: 20px 15px;
+  }
+  
+  .ice-answers-container {
+    gap: 20px;
+  }
+  
+  .ice-answer-circle {
+    width: 45px;
+    height: 45px;
+  }
+  
+  .ice-answer-label {
+    font-size: 14px;
+  }
+  
+  .ice-scale-label {
+    font-size: 12px;
+    max-width: 60px;
+  }
+  
+  .ice-navigation-buttons {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .ice-next-button,
+  .ice-prev-button,
+  .ice-finalizar-button {
+    margin: 5px 0;
+  }
+}
