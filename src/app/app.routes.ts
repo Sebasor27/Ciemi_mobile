@@ -37,7 +37,7 @@ export const routes: Routes = [
   // Rutas corregidas para las encuestas con parámetro id
   {
     path: 'encuesta-iepm/:id',
-    loadComponent: () => import('./pages/encuesta-iepm/encuesta-iepm.page').then( m => m.EncuestaIEPMPage)
+    loadComponent: () => import('./pages/encuesta-iepm/encuesta-iepm.page').then( m => m.EncuestaIepmPage)
   },
   {
     path: 'encuesta-ice/:id',

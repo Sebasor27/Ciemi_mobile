@@ -3,15 +3,35 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { ApiService } from '../../Service/api.service';
 import { AlertController } from '@ionic/angular';
 import {
-  IonContent, IonHeader, IonTitle, IonToolbar, IonButton, IonSearchbar, IonIcon, IonList, IonItemGroup, IonItem, IonLabel, IonBadge,
-  IonButtons, IonSpinner, IonBackButton, IonGrid, IonRow, IonCol, IonFab, IonFabButton, IonFabList, IonText, IonSelectOption,
-  IonCardContent, IonCardTitle, IonCardSubtitle, IonCard, IonCardHeader, IonInput, IonSelect, IonToggle 
-
+  IonContent,
+  IonHeader,
+  IonTitle,
+  IonToolbar,
+  IonButton,
+  IonIcon,
+  IonList,
+  IonItem,
+  IonLabel,
+  IonButtons,
+  IonSpinner,
+  IonBackButton,
+  IonGrid,
+  IonRow,
+  IonCol,
+  IonText,
+  IonSelectOption,
+  IonCardContent,
+  IonCardTitle,
+  IonCard,
+  IonCardHeader,
+  IonInput,
+  IonSelect,
+  IonToggle,
 } from '@ionic/angular/standalone';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { addIcons } from 'ionicons';
-import { list, create, close, save, warning} from 'ionicons/icons';
+import { list, create, close, save, warning } from 'ionicons/icons';
 
 interface Emprendedor {
   idEmprendedor: number;
@@ -40,9 +60,32 @@ interface Emprendedor {
   styleUrls: ['./detalle-emp.page.scss'],
   standalone: true,
   imports: [
-    IonContent, IonHeader, IonTitle,IonToolbar,IonButton,CommonModule,FormsModule,IonSearchbar,IonIcon,IonList,IonItemGroup,IonItem,IonLabel,IonBadge,IonButtons,
-    IonSpinner, IonBackButton, IonGrid, IonRow, IonCol, IonFab, IonFabButton, IonFabList, IonInput, IonSelect, IonToggle, IonText, IonSelectOption, IonCardContent,
-    IonCardTitle, IonCardSubtitle, IonCard, IonCardHeader 
+    IonContent,
+    IonHeader,
+    IonTitle,
+    IonToolbar,
+    IonButton,
+    CommonModule,
+    FormsModule,
+    IonIcon,
+    IonList,
+    IonItem,
+    IonLabel,
+    IonButtons,
+    IonSpinner,
+    IonBackButton,
+    IonGrid,
+    IonRow,
+    IonCol,
+    IonInput,
+    IonSelect,
+    IonToggle,
+    IonText,
+    IonSelectOption,
+    IonCardContent,
+    IonCardTitle,
+    IonCard,
+    IonCardHeader,
   ],
 })
 export class DetalleEmpPage implements OnInit {
@@ -88,7 +131,11 @@ export class DetalleEmpPage implements OnInit {
     private alertController: AlertController
   ) {
     addIcons({
-      list, create, close, save, warning
+      list,
+      create,
+      close,
+      save,
+      warning,
     });
   }
 
@@ -102,42 +149,42 @@ export class DetalleEmpPage implements OnInit {
     }
   }
 
-async loadEmprendedor(id: number) {
-  try {
-    const data = (await this.apiService
-      .getEmprendedor(id)
-      .toPromise()) as Emprendedor;
-    this.emprendedor = data;
-    this.editedEmprendedor = JSON.parse(JSON.stringify(data));
-  } catch (error) {
-    console.error('Error al obtener los datos:', error);
-    this.error = error;
-    await this.showAlert('Error', 'No se pudo cargar el emprendedor');
-  } finally {
-    this.loading = false;
+  async loadEmprendedor(id: number) {
+    try {
+      const data = (await this.apiService
+        .getEmprendedor(id)
+        .toPromise()) as Emprendedor;
+      this.emprendedor = data;
+      this.editedEmprendedor = JSON.parse(JSON.stringify(data));
+    } catch (error) {
+      console.error('Error al obtener los datos:', error);
+      this.error = error;
+      await this.showAlert('Error', 'No se pudo cargar el emprendedor');
+    } finally {
+      this.loading = false;
+    }
   }
-}
 
-// Agrega un método para resetear los cambios si cancela la edición
-cancelEdit() {
-  if (this.emprendedor) {
-    this.editedEmprendedor = JSON.parse(JSON.stringify(this.emprendedor));
-  }
-  this.isEditing = false;
-}
-
-// Modifica el toggleEdit para manejar mejor el estado
-toggleEdit() {
-  if (!this.isEditing) {
+  // Agrega un método para resetear los cambios si cancela la edición
+  cancelEdit() {
     if (this.emprendedor) {
       this.editedEmprendedor = JSON.parse(JSON.stringify(this.emprendedor));
     }
-  } else {
-    // Al cancelar edición, resetea los cambios
-    this.cancelEdit();
+    this.isEditing = false;
   }
-  this.isEditing = !this.isEditing;
-}
+
+  // Modifica el toggleEdit para manejar mejor el estado
+  toggleEdit() {
+    if (!this.isEditing) {
+      if (this.emprendedor) {
+        this.editedEmprendedor = JSON.parse(JSON.stringify(this.emprendedor));
+      }
+    } else {
+      // Al cancelar edición, resetea los cambios
+      this.cancelEdit();
+    }
+    this.isEditing = !this.isEditing;
+  }
 
   async saveChanges() {
     if (!this.emprendedor) return;
@@ -174,7 +221,7 @@ toggleEdit() {
   navigateToEncuestas() {
     if (this.emprendedor) {
       this.router.navigate([
-        `/detalles-emprendedor/${this.emprendedor.idEmprendedor}/encuestas`,
+        `/ventana-encuestas/${this.emprendedor.idEmprendedor}`,
       ]);
     }
   }
