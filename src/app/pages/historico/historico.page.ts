@@ -19,6 +19,7 @@ import {
   IonBadge,
   IonButtons,
   IonSpinner,
+  IonBackButton
 } from '@ionic/angular/standalone';
 
 @Component({
@@ -43,6 +44,7 @@ import {
     IonBadge,
     IonButtons,
     IonSpinner,
+    IonBackButton
   ],
 })
 export class HistoricoPage implements OnInit {

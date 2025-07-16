@@ -1,0 +1,88 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Encuesta IEPM</ion-title>
+      <ion-buttons slot="start">
+      <ion-back-button defaultHref="/ventana-encuestas/:id"></ion-back-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-spinner *ngIf="isLoading"></ion-spinner>
+
+  <div *ngIf="error" class="ion-padding">
+    <p>Error: {{ error }}</p>
+    <ion-button (click)="cargarPreguntas()">Reintentar</ion-button>
+  </div>
+
+  <div *ngIf="submitSuccess" class="ion-padding">
+    <h2>¡Encuesta enviada con éxito!</h2>
+    <ion-button (click)="volver()">Volver</ion-button>
+  </div>
+
+  <div *ngIf="!isLoading && !submitSuccess && currentDestinatario" class="ion-padding">
+    <h3>Enfoque: {{ currentDestinatario }}</h3>
+
+    <ion-item>
+      Sección: {{ destinatarios.indexOf(currentDestinatario) + 1 }} / {{ destinatarios.length }}
+    </ion-item>
+
+    <div *ngIf="showUnansweredAlert" class="ion-text-center ion-margin-top">
+      <ion-text color="danger">
+        ¡Responde todas las preguntas antes de continuar!
+      </ion-text>
+    </div>
+
+    <ion-list>
+      <ion-item *ngFor="let question of groupedQuestions[currentDestinatario]" class="question-item" lines="none">
+        <div style="width: 100%;">
+          <!-- Pregunta arriba -->
+          <ion-label class="ion-text-wrap" style="display: block; margin-bottom: 8px;">
+            {{ question.enunciado }}<br />
+            <small>Indicador: {{ question.indicador }}</small>
+          </ion-label>
+
+          <!-- Opciones debajo, vertical -->
+          <ion-radio-group
+            [(ngModel)]="answers[question.idPregunta]"
+            name="respuesta{{ question.idPregunta }}"
+            style="display: flex; flex-direction: column;"
+          >
+            <ion-item *ngFor="let criterio of question.criteriosEvaluacion" lines="none">
+              <ion-radio
+                slot="start"
+                [value]="criterio.valor"
+                (ionSelect)="handleAnswerChange(question.idPregunta, criterio.valor)"
+              ></ion-radio>
+              <ion-label>{{ criterio.valor }} - {{ criterio.descripcion }}</ion-label>
+            </ion-item>
+          </ion-radio-group>
+
+          <!-- Comentario debajo de opciones -->
+          <ion-textarea
+            placeholder="Comentario (opcional)"
+            [(ngModel)]="comments[question.idPregunta]"
+            (ionChange)="handleCommentChange(question.idPregunta, comments[question.idPregunta])"
+            style="margin-top: 8px;"
+          >
+          </ion-textarea>
+        </div>
+      </ion-item>
+    </ion-list>
+
+    <ion-button
+      expand="block"
+      color="medium"
+      (click)="anterior()"
+      *ngIf="destinatarios.indexOf(currentDestinatario) > 0"
+    >
+      Anterior
+    </ion-button>
+
+    <ion-button expand="block" color="primary" (click)="siguiente()" [disabled]="isSubmitting">
+      {{ destinatarios.indexOf(currentDestinatario) === destinatarios.length - 1
+        ? 'Finalizar Encuesta'
+        : 'Siguiente' }}
+    </ion-button>
+  </div>
+</ion-content>
