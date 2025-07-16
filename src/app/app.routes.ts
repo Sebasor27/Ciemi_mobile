@@ -43,10 +43,15 @@ export const routes: Routes = [
     path: 'encuesta-ice/:id',
     loadComponent: () => import('./pages/encuesta-ice/encuesta-ice.page').then( m => m.EncuestaICEPage)
   },
-  // Ruta para resultados
   /*{
+    path: 'resultados',
+    loadComponent: () => import('./pages/resultados/resultados.page').then( m => m.ResultadosPage)
+  },*/
+
+
+  {
     path: 'resultados/:id',
     loadComponent: () => import('./pages/resultados/resultados.page').then( m => m.ResultadosPage)
-  }*/
+  }
 
 ];
