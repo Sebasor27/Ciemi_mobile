@@ -1,7 +1,5 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { HttpClient } from '@angular/common/http';
-import { AlertController, LoadingController } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { 
@@ -9,41 +7,18 @@ import {
   IonHeader, 
   IonTitle, 
   IonToolbar, 
-  IonCard, 
-  IonCardContent, 
-  IonCardHeader, 
-  IonCardTitle, 
-  IonButton, 
-  IonRadioGroup, 
-  IonRadio, 
-  IonItem, 
+  IonButton,
+  IonButtons,
+  IonBackButton,
   IonLabel,
-  IonSpinner,
   IonText,
-  IonGrid,
-  IonRow,
-  IonCol,
-  IonLoading
+  IonItem, 
+  IonList, 
+  IonSpinner,
+  AlertController
 } from '@ionic/angular/standalone';
-
-interface Pregunta {
-  idPregunta: number;
-  textoPregunta: string;
-  idCompetencia: number;
-}
-
-interface Competencia {
-  idCompetencia: number;
-  nombreCompetencia: string;
-}
-
-interface GroupedQuestions {
-  [key: number]: Pregunta[];
-}
-
-interface Answers {
-  [key: number]: number;
-}
+import { IonicModule } from '@ionic/angular';
+import { EncuestaIceService } from '../../services/encuestas-ice.service';
 
 @Component({
   selector: 'app-encuesta-ice',
@@ -51,103 +26,83 @@ interface Answers {
   styleUrls: ['./encuesta-ice.page.scss'],
   standalone: true,
   imports: [
+    IonicModule,
     CommonModule,
-    FormsModule,
-    IonContent,
-    IonHeader,
-    IonTitle,
-    IonToolbar,
-    IonCard,
-    IonCardContent,
-    IonCardHeader,
-    IonCardTitle,
-    IonButton,
-    IonRadioGroup,
-    IonRadio,
-    IonItem,
-    IonLabel,
-    IonSpinner,
-    IonText,
-    IonGrid,
-    IonRow,
-    IonCol,
-    IonLoading
-  ]
+    FormsModule
+  ],
 })
-export class EncuestaICEPage implements OnInit {
-  questions: Pregunta[] = [];
-  competencias: Competencia[] = [];
-  currentCompetenciaIndex = 0;
-  groupedQuestions: GroupedQuestions = {};
-  answers: Answers = {};
-  loading = true;
+export class EncuestaIcePage implements OnInit {
   idEmprendedor: string | null = null;
-
+  questions: any[] = [];
+  competencias: any[] = [];
+  currentCompetenciaIndex: number = 0;
+  groupedQuestions: any = {};
+  answers: { [key: number]: number } = {};
+  loading: boolean = true;
+  error: string | null = null;
+  
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private http: HttpClient,
-    private alertController: AlertController,
-    private loadingController: LoadingController
+    private encuestaService: EncuestaIceService,
+    private alertController: AlertController
   ) {}
 
   ngOnInit() {
-    this.idEmprendedor = this.route.snapshot.paramMap.get('idEmprendedor');
+    this.idEmprendedor = this.route.snapshot.paramMap.get('id');
+    console.log('ID del emprendedor recibido:', this.idEmprendedor);
+
+    if (!this.idEmprendedor) {
+      this.error = 'No se ha proporcionado un ID de emprendedor válido';
+      this.loading = false;
+      return;
+    }
+
     this.fetchQuestionsAndCompetencias();
   }
 
-  ionViewWillEnter() {
-    // Se ejecuta cada vez que la página está a punto de entrar
-    this.scrollToTop();
-  }
-
-  ionViewDidEnter() {
-    this.scrollToTop();
-  }
-
-  private scrollToTop() {
-    const content = document.querySelector('ion-content');
-    if (content) {
-      content.scrollToTop(300);
-    }
-  }
-
   async fetchQuestionsAndCompetencias() {
-    const loading = await this.loadingController.create({
-      message: 'Cargando...',
-    });
-    await loading.present();
+    this.loading = true;
+    this.error = null;
 
     try {
-      const [preguntasResponse, competenciasResponse] = await Promise.all([
-        this.http.get<Pregunta[]>('https://localhost:7075/api/PreguntasIce').toPromise(),
-        this.http.get<Competencia[]>('https://localhost:7075/api/Competencia').toPromise()
+      const [preguntasData, competenciasData] = await Promise.all([
+        this.encuestaService.obtenerPreguntas().toPromise(),
+        this.encuestaService.obtenerCompetencias().toPromise()
       ]);
 
-      const preguntasData = preguntasResponse || [];
-      const competenciasData = competenciasResponse || [];
+      this.questions = preguntasData || [];
+      this.competencias = competenciasData || [];
 
-      const grouped = preguntasData.reduce((acc: GroupedQuestions, question) => {
+      console.log('Preguntas cargadas:', this.questions);
+      console.log('Competencias cargadas:', this.competencias);
+
+      // Agrupar preguntas por competencia
+      this.groupedQuestions = this.questions.reduce((acc: any, question: any) => {
         const compId = question.idCompetencia;
         if (!acc[compId]) acc[compId] = [];
         acc[compId].push(question);
         return acc;
       }, {});
 
-      this.questions = preguntasData;
-      this.groupedQuestions = grouped;
-      this.competencias = competenciasData;
+      console.log('Preguntas agrupadas:', this.groupedQuestions);
+
+      // Verificar que tenemos datos válidos
+      if (this.competenciasIds.length === 0) {
+        throw new Error('No se encontraron competencias válidas');
+      }
+
+      this.loading = false;
     } catch (error) {
       console.error('Error al obtener datos:', error);
-      this.showAlert('Error', 'No se pudieron cargar los datos. Inténtalo de nuevo más tarde.');
-    } finally {
+      this.error = 'No se pudieron cargar los datos. Inténtalo de nuevo más tarde.';
       this.loading = false;
-      await loading.dismiss();
     }
   }
 
   handleAnswer(questionId: number, value: number) {
-    this.answers = { ...this.answers, [questionId]: value };
+    this.answers[questionId] = value;
+    console.log('Respuesta registrada:', questionId, value);
   }
 
   async handleNextCompetencia() {
@@ -155,30 +110,52 @@ export class EncuestaICEPage implements OnInit {
     const currentQuestions = this.groupedQuestions[currentCompetenciaId] || [];
 
     const allAnswered = currentQuestions.every(
-      q => this.answers[q.idPregunta] !== undefined
+      (q: any) => this.answers[q.idPregunta] !== undefined
     );
 
     if (!allAnswered) {
-      await this.showAlert('Advertencia', 'Responde todas las preguntas antes de continuar.');
+      const alert = await this.alertController.create({
+        header: 'Atención',
+        message: 'Responde todas las preguntas antes de continuar.',
+        buttons: ['OK']
+      });
+      await alert.present();
       return;
     }
 
     if (this.currentCompetenciaIndex < this.competenciasIds.length - 1) {
       this.currentCompetenciaIndex++;
-      this.scrollToTop();
+      console.log('Navegando a competencia:', this.currentCompetenciaIndex);
+      
+      // Scroll to top
+      const content = document.querySelector('ion-content');
+      if (content) {
+        content.scrollToTop(300);
+      }
     }
   }
 
   handlePreviousCompetencia() {
     if (this.currentCompetenciaIndex > 0) {
       this.currentCompetenciaIndex--;
-      this.scrollToTop();
+      console.log('Navegando a competencia anterior:', this.currentCompetenciaIndex);
+      
+      // Scroll to top
+      const content = document.querySelector('ion-content');
+      if (content) {
+        content.scrollToTop(300);
+      }
     }
   }
 
   async enviarRespuestas() {
     if (!this.idEmprendedor) {
-      await this.showAlert('Error', 'El ID del emprendedor no es válido.');
+      const alert = await this.alertController.create({
+        header: 'Error',
+        message: 'El ID del emprendedor no es válido.',
+        buttons: ['OK']
+      });
+      await alert.present();
       return;
     }
 
@@ -186,84 +163,90 @@ export class EncuestaICEPage implements OnInit {
       emprendedorId: parseInt(this.idEmprendedor, 10),
       respuestas: Object.keys(this.answers).map(idPregunta => ({
         idEmprendedor: parseInt(this.idEmprendedor!, 10),
-        valorRespuesta: this.answers[parseInt(idPregunta, 10)],
+        valorRespuesta: this.answers[parseInt(idPregunta)],
         idPregunta: parseInt(idPregunta, 10)
       }))
     };
 
-    const loading = await this.loadingController.create({
-      message: 'Enviando respuestas...',
-    });
-    await loading.present();
-
     try {
-      await this.http.post(
-        'https://localhost:7075/api/EncuestasIce/procesar-encuesta',
-        requestData
-      ).toPromise();
-
-      await this.showAlert('Éxito', 'Encuesta finalizada correctamente.');
-      this.router.navigate(['/ventanaencuestas']);
+      await this.encuestaService.enviarRespuestas(requestData).toPromise();
+      
+      const alert = await this.alertController.create({
+        header: 'Éxito',
+        message: 'Encuesta finalizada correctamente.',
+        buttons: [{
+          text: 'OK',
+          handler: () => {
+           this.router.navigate(['/ventana-encuestas', this.idEmprendedor]);
+          }
+        }]
+      });
+      await alert.present();
     } catch (error) {
       console.error('Error al enviar las respuestas:', error);
-      await this.showAlert('Error', 'Hubo un error al finalizar la encuesta. Inténtalo de nuevo.');
-    } finally {
-      await loading.dismiss();
+      const alert = await this.alertController.create({
+        header: 'Error',
+        message: 'Hubo un error al finalizar la encuesta. Inténtalo de nuevo.',
+        buttons: ['OK']
+      });
+      await alert.present();
     }
   }
 
   async handleFinalizarEncuesta() {
     const allQuestionsAnswered = this.competenciasIds.every(compId => {
       const questions = this.groupedQuestions[compId] || [];
-      return questions.every(q => this.answers[q.idPregunta] !== undefined);
+      return questions.every((q: any) => this.answers[q.idPregunta] !== undefined);
     });
 
     if (!allQuestionsAnswered) {
-      await this.showAlert('Advertencia', 'Por favor, responde todas las preguntas antes de finalizar la encuesta.');
+      const alert = await this.alertController.create({
+        header: 'Atención',
+        message: 'Por favor, responde todas las preguntas antes de finalizar la encuesta.',
+        buttons: ['OK']
+      });
+      await alert.present();
       return;
     }
 
-    const alert = await this.alertController.create({
+    const confirmAlert = await this.alertController.create({
       header: 'Confirmar',
       message: '¿Estás seguro de que deseas finalizar la encuesta?',
       buttons: [
         {
           text: 'Cancelar',
-          role: 'cancel',
+          role: 'cancel'
         },
         {
-          text: 'Confirmar',
+          text: 'Finalizar',
           handler: () => {
             this.enviarRespuestas();
-          },
-        },
-      ],
+          }
+        }
+      ]
     });
-
-    await alert.present();
+    await confirmAlert.present();
   }
 
-  private async showAlert(header: string, message: string) {
-    const alert = await this.alertController.create({
-      header,
-      message,
-      buttons: ['OK'],
-    });
-
-    await alert.present();
+  get competenciasIds(): string[] {
+    if (!this.groupedQuestions || Object.keys(this.groupedQuestions).length === 0) {
+      return [];
+    }
+    return Object.keys(this.groupedQuestions).sort((a, b) => parseInt(a) - parseInt(b));
   }
 
-  get competenciasIds(): number[] {
-    return Object.keys(this.groupedQuestions)
-      .map(id => parseInt(id, 10))
-      .sort((a, b) => a - b);
+  get currentCompetenciaId(): string {
+    const ids = this.competenciasIds;
+    if (ids.length === 0 || this.currentCompetenciaIndex >= ids.length) {
+      return '';
+    }
+    return ids[this.currentCompetenciaIndex];
   }
 
-  get currentCompetenciaId(): number {
-    return this.competenciasIds[this.currentCompetenciaIndex];
-  }
-
-  get currentQuestions(): Pregunta[] {
+  get currentQuestions(): any[] {
+    if (!this.currentCompetenciaId) {
+      return [];
+    }
     return this.groupedQuestions[this.currentCompetenciaId] || [];
   }
 
@@ -275,46 +258,63 @@ export class EncuestaICEPage implements OnInit {
     return this.currentCompetenciaIndex === 0;
   }
 
-  get currentCompetencia(): Competencia | undefined {
+  get currentCompetencia(): any {
+    if (!this.currentCompetenciaId || this.competencias.length === 0) {
+      return null;
+    }
     return this.competencias.find(
-      c => c.idCompetencia === this.currentCompetenciaId
+      c => c.idCompetencia === parseInt(this.currentCompetenciaId, 10)
     );
   }
 
-  getScale(competenciaId: number): number[] {
-    if (competenciaId >= 1 && competenciaId <= 6) {
-      return [1, 2, 3, 4, 5];
-    } else if (competenciaId >= 7 && competenciaId <= 10) {
-      return [1, 3, 5];
+  getScale(competenciaId: string): number[] {
+    if (!competenciaId) return [];
+    
+    const id = parseInt(competenciaId, 10);
+    if (id >= 1 && id <= 6) {
+      return [1, 2, 3, 4, 5]; // Escala de 1 a 5
+    } else if (id >= 7 && id <= 10) {
+      return [1, 3, 5]; // Escala de 1, 3, 5
     }
     return [];
   }
 
-  getScaleLabel(competenciaId: number, value: number): string {
-    if (competenciaId <= 6) {
-      switch (value) {
-        case 1: return 'Nunca';
-        case 2: return 'A veces';
-        case 3: return 'Muchas veces';
-        case 4: return 'Casi siempre';
-        case 5: return 'Siempre';
-        default: return '';
+  getScaleLabel(num: number): string {
+    if (!this.currentCompetenciaId) return '';
+    
+    const id = parseInt(this.currentCompetenciaId, 10);
+    if (id <= 6) {
+      switch (num) {
+        case 1: return "Nunca";
+        case 2: return "A veces";
+        case 3: return "Muchas veces";
+        case 4: return "Casi siempre";
+        case 5: return "Siempre";
+        default: return "";
       }
     } else {
-      switch (value) {
-        case 1: return 'No';
-        case 3: return 'Medianamente';
-        case 5: return 'Sí';
-        default: return '';
+      switch (num) {
+        case 1: return "No";
+        case 3: return "Medianamente";
+        case 5: return "Sí";
+        default: return "";
       }
     }
   }
 
-  getScaleInstructions(competenciaId: number): string {
-    if (competenciaId <= 6) {
-      return 'Escala: 5: Siempre; 4: Casi siempre; 3: Muchas veces; 2: A veces; 1: Nunca.';
+  getScaleInstructions(): string {
+    if (!this.currentCompetenciaId) return '';
+    
+    const id = parseInt(this.currentCompetenciaId, 10);
+    if (id <= 6) {
+      return "Escala: 5: Siempre; 4: Casi siempre; 3: Muchas veces; 2: A veces; 1: Nunca.";
     } else {
-      return 'Escala: 5: Sí; 3: Medianamente; 1: No.';
+      return "Escala: 5: Sí; 3: Medianamente; 1: No.";
     }
+  }
+
+  // Método para verificar si los datos están listos
+  get isDataReady(): boolean {
+    return !this.loading && !this.error && this.competenciasIds.length > 0;
   }
 }

@@ -1,79 +1,89 @@
-<ion-content [fullscreen]="true">
-  <div class="ice-container">
-    <ion-loading *ngIf="loading" message="Cargando..."></ion-loading>
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Encuesta ICE</ion-title>
+    <ion-buttons slot="start">
+      <!--  la ruta correcta -->
+      <ion-back-button [defaultHref]="'/ventana-encuestas/' + idEmprendedor"></ion-back-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-spinner *ngIf="loading"></ion-spinner>
     
-    <div *ngIf="!loading">
-      <p class="ice-survey-type">
-        Tipo de encuesta: <strong>ICE</strong>
-      </p>
-
-      <p class="ice-category-label">
-        Competencia: 
-        <strong>
-          {{ currentCompetencia?.nombreCompetencia || 'Cargando...' }}
-        </strong>
-      </p>
-
-      <p class="ice-instructions">
-        El presente cuestionario tiene el objetivo de evaluar su posibilidad de emprender 
-        adecuadamente una empresa. La forma de responder se especifica en cada caso:
-      </p>
-
-      <p class="ice-instructions-scale">
-        {{ getScaleInstructions(currentCompetenciaId) }}
-      </p>
-
-      <div *ngFor="let question of currentQuestions; let i = index" 
-           class="ice-question-block">
-        <p class="ice-question-text">
-          {{ i + 1 }}. {{ question.textoPregunta }}
-        </p>
+  <div *ngIf="error" class="ion-padding">
+    <p>Error: {{ error }}</p>
+    <ion-button (click)="fetchQuestionsAndCompetencias()">Reintentar</ion-button>
+  </div>
+    
+  <div *ngIf="isDataReady" class="ion-padding ice-container">
+    <h3>Enfoque: {{ currentCompetencia?.nombreCompetencia || 'No disponible' }}</h3>
+    
+    <ion-item>
+      Sección: {{ currentCompetenciaIndex + 1 }} / {{ competenciasIds.length }}
+    </ion-item>
         
-        <div class="ice-answers-container">
-          <div *ngFor="let num of getScale(currentCompetenciaId)" 
-               class="ice-answer-wrapper">
-            <div 
-              (click)="handleAnswer(question.idPregunta, num)"
-              class="ice-answer-circle"
-              [class.ice-selected]="answers[question.idPregunta] === num">
-              <span class="ice-answer-label">{{ num }}</span>
+    <p class="ice-survey-type">
+      Tipo de encuesta: <strong>ICE</strong>
+    </p>
+        
+    <p class="ice-instructions">
+      El presente cuestionario tiene el objetivo de evaluar su posibilidad de emprender 
+      adecuadamente una empresa. La forma de responder se especifica en cada caso:
+    </p>
+        
+    <p class="ice-instructions-scale">
+      {{ getScaleInstructions() }}
+    </p>
+        
+    <ion-list>
+      <ion-item *ngFor="let question of currentQuestions; let idx = index" class="question-item" lines="none">
+        <div style="width: 100%;">
+          <ion-label class="ion-text-wrap" style="display: block; margin-bottom: 8px;">
+            {{ idx + 1 }}. {{ question.textoPregunta }}
+          </ion-label>
+                    
+          <div class="ice-answers-container">
+            <div *ngFor="let num of getScale(currentCompetenciaId)" class="ice-answer-wrapper">
+              <div
+                 (click)="handleAnswer(question.idPregunta, num)"
+                class="ice-answer-circle"
+                [class.ice-selected]="answers[question.idPregunta] === num"
+              >
+                <span class="ice-answer-label">{{ num }}</span>
+              </div>
+              <span class="ice-scale-label">{{ getScaleLabel(num) }}</span>
             </div>
-            <span class="ice-scale-label">
-              {{ getScaleLabel(currentCompetenciaId, num) }}
-            </span>
           </div>
         </div>
-      </div>
-
-      <div class="ice-navigation-buttons">
-        <ion-button 
-          *ngIf="!isFirstCompetencia"
-          (click)="handlePreviousCompetencia()"
-          color="primary"
-          class="ice-prev-button">
-          Competencia Anterior
-        </ion-button>
-
-        <ion-button 
-          *ngIf="!isLastCompetencia"
-          (click)="handleNextCompetencia()"
-          color="primary"
-          class="ice-next-button">
-          Siguiente Competencia
-        </ion-button>
-
-        <ion-button 
-          *ngIf="isLastCompetencia"
-          (click)="handleFinalizarEncuesta()"
-          color="success"
-          class="ice-finalizar-button">
-          Finalizar Encuesta
-        </ion-button>
-      </div>
-
-      <p class="ice-progress">
-        Progreso: {{ currentCompetenciaIndex + 1 }} / {{ competenciasIds.length }}
-      </p>
-    </div>
+      </ion-item>
+    </ion-list>
+        
+    <ion-button
+      expand="block"
+      color="medium"
+      (click)="handlePreviousCompetencia()"
+      *ngIf="!isFirstCompetencia"
+    >
+      Competencia Anterior
+    </ion-button>
+        
+    <ion-button 
+      expand="block" 
+      color="primary" 
+      (click)="handleNextCompetencia()"
+      *ngIf="!isLastCompetencia"
+    >
+      Siguiente Competencia
+    </ion-button>
+        
+    <ion-button 
+      expand="block" 
+      color="primary" 
+      (click)="handleFinalizarEncuesta()"
+      *ngIf="isLastCompetencia"
+    >
+      Finalizar Encuesta
+    </ion-button>
   </div>
 </ion-content>

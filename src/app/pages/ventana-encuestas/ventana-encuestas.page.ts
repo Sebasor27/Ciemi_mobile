@@ -127,10 +127,10 @@ export class VentanaEncuestasPage implements OnInit {
           const route = `/encuesta-ice/${this.idEmprendedor}`;
           console.log('Ruta a navegar:', route);
           this.router.navigate(['/encuesta-ice', this.idEmprendedor])
-            .then((success) => {
+            .then((success: boolean) => {
               console.log('Navegación exitosa:', success);
             })
-            .catch((error) => {
+            .catch((error: any) => {
               console.error('Error en navegación:', error);
             });
         } else if (this.selectedSurvey === 'iepm') {
@@ -138,10 +138,10 @@ export class VentanaEncuestasPage implements OnInit {
           const route = `/encuesta-iepm/${this.idEmprendedor}`;
           console.log('Ruta a navegar:', route);
           this.router.navigate(['/encuesta-iepm', this.idEmprendedor])
-            .then((success) => {
+            .then((success: boolean) => {
               console.log('Navegación exitosa:', success);
             })
-            .catch((error) => {
+            .catch((error: any) => {
               console.error('Error en navegación:', error);
             });
         }
@@ -158,6 +158,16 @@ export class VentanaEncuestasPage implements OnInit {
   async goToResults() {
     // Navegar directamente a los resultados
     this.router.navigate([`/resultados/${this.idEmprendedor}`]);
+  }
+
+  // Método para regresar a la página de detalles del emprendedor
+  goToDetails() {
+    if (this.idEmprendedor) {
+      this.router.navigate(['/detalle-emp', this.idEmprendedor]);
+    } else {
+      console.error('No se puede navegar a detalles: ID del emprendedor no disponible');
+      this.router.navigate(['/historico']);
+    }
   }
 
   goBack() {
