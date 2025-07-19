@@ -1,13 +1,478 @@
-<ion-header [translucent]="true">
+<ion-header>
   <ion-toolbar>
-    <ion-title>resultados</ion-title>
+    <ion-title>Resultados Finales</ion-title>
+    <ion-button slot="end" fill="clear" (click)="imprimir()">
+      <ion-icon name="print-outline"></ion-icon>
+    </ion-button>
+    <ion-button slot="end" fill="clear" (click)="toggleComentarios()">
+      <ion-icon name="chatbubble-outline"></ion-icon>
+    </ion-button>
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">resultados</ion-title>
-    </ion-toolbar>
-  </ion-header>
-</ion-content>
+<ion-content class="results-content">
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="loading-container">
+    <ion-spinner name="crescent"></ion-spinner>
+    <p>Cargando datos...</p>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="error && !isLoading" class="error-container">
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>Error</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <p>{{ error }}</p>
+        <ion-button expand="block" (click)="router.navigateByUrl('/')">
+          Regresar
+        </ion-button>
+      </ion-card-content>
+    </ion-card>
+  </div>
+
+  <!-- Sin encuestas -->
+  <div *ngIf="!isLoading && !error && encuestas.length === 0 && encuestasIEPM.length === 0" class="no-encuestas">
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>No hay encuestas disponibles</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <p>Este emprendedor no tiene encuestas registradas.</p>
+      </ion-card-content>
+    </ion-card>
+  </div>
+
+  <!-- Contenido principal -->
+  <div *ngIf="!isLoading && !error && (encuestas.length > 0 || encuestasIEPM.length > 0)" class="results-container">
+    <!-- Selectores de encuesta -->
+    <div class="encuesta-selectors">
+      <div class="selector-item" *ngIf="encuestas.length > 0">
+        <ion-item>
+          <ion-label>Seleccione la encuesta de ICE:</ion-label>
+          <ion-select [(ngModel)]="encuestaSeleccionada" (ionChange)="onEncuestaSeleccionadaChange($event)" interface="popover">
+            <ion-select-option *ngFor="let encuesta of encuestas" [value]="encuesta.idEncuesta">
+              {{ formatearFechaHora(encuesta.fechaEvaluacion) }}
+            </ion-select-option>
+          </ion-select>
+        </ion-item>
+      </div>
+      <div class="selector-item" *ngIf="encuestasIEPM.length > 0">
+        <ion-item>
+          <ion-label>Seleccione la encuesta de IEPM:</ion-label>
+          <ion-select [(ngModel)]="encuestaSeleccionadaIEPM" (ionChange)="onEncuestaSeleccionadaIEPMChange($event)" interface="popover">
+            <ion-select-option *ngFor="let encuesta of encuestasIEPM" [value]="encuesta.idEncuesta">
+              {{ formatearFecha(encuesta.fechaAplicacion) }}
+            </ion-select-option>
+          </ion-select>
+        </ion-item>
+      </div>
+    </div>
+
+    <!-- Contenido para imprimir -->
+    <div #printContent>
+      <!-- Datos del emprendedor -->
+      <h2>RESULTADOS FINALES</h2>
+      <div class="results-info">
+        <p><strong>Emprendedor:</strong> <span class="data-box">{{ emprendedor?.nombre || 'N/A' }}</span></p>
+        <p><strong>Fecha de generación:</strong> <span class="data-box">{{ getCurrentDate() }}</span></p>
+        <p><strong>Fecha de evaluación:</strong> <span class="data-box">{{ getEncuestaFecha() }}</span></p>
+      </div>
+
+      <!-- Resultados ICE -->
+      <div *ngIf="resultados.length > 0" class="results-section">
+        <h3>CÁLCULO ICE POR COMPETENCIA:</h3>
+        <div class="ice-competencias">
+          <div class="competencias-grid">
+            <div class="competencia-item" *ngFor="let competencia of competenciasNombres; let i = index">
+              {{ competencia }} → <span class="data-box">{{ getValorCompetencia(i + 1) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Selector de gráfico implementado -->
+        <div class="chart-container">
+          <h4>VALORACIÓN ICE</h4>
+          
+          <!-- Controles del gráfico -->
+          <div class="chart-controls">
+            <ion-item>
+              <ion-label>Tipo de gráfico:</ion-label>
+              <ion-select [(ngModel)]="tipoGrafico" (ionChange)="cambiarTipoGrafico($event.detail.value)">
+                <ion-select-option value="canvas">Pastel (Canvas)</ion-select-option>
+                <ion-select-option value="pie">Pastel (Chart.js)</ion-select-option>
+                <ion-select-option value="doughnut">Dona</ion-select-option>
+                <ion-select-option value="bar">Barras</ion-select-option>
+                <ion-select-option value="radar">Radar</ion-select-option>
+              </ion-select>
+            </ion-item>
+            
+            <!-- Botones de control -->
+            <ion-button fill="outline" size="small" (click)="verificarDatos()">
+              <ion-icon name="bug-outline"></ion-icon>
+              Debug
+            </ion-button>
+            
+            <ion-button fill="clear" size="small" (click)="forzarRedibujado()">
+              <ion-icon name="refresh-outline"></ion-icon>
+              Actualizar
+            </ion-button>
+          </div>
+
+          <!-- Canvas para el gráfico -->
+          <div class="chart-wrapper">
+            <canvas #pieChart id="pieChart" width="400" height="400" style="max-width: 100%; max-height: 400px;">
+            </canvas>
+          </div>
+
+          <!-- Información adicional -->
+          <div class="chart-info" *ngIf="resultados && resultados.length > 0">
+            <ion-text color="medium">
+              <p>Total de competencias: {{ resultados.length }}</p>
+              <p>ICE General: {{ calcularIceGeneral() | number:'1.2-2' }}</p>
+            </ion-text>
+          </div>
+
+          <!-- Leyenda del gráfico -->
+          <div class="pie-legend">
+  <div *ngFor="let resultado of getResultadosFiltrados(); let i = index" class="legend-item">
+    <span class="legend-color" [style.background-color]="colors[resultado.idCompetencia - 1]"></span>
+    <span class="legend-label">
+      {{ competenciasNombres[resultado.idCompetencia - 1] }} ({{ getCompetenciaPercentage(resultado).toFixed(1) }}%)
+    </span>
+  </div>
+</div>
+
+        <!-- Tabla de resultados ICE -->
+        <table class="results-table">
+          <thead>
+            <tr>
+              <th>INDICADOR</th>
+              <th>VALOR</th>
+              <th>NIVEL</th>
+              <th>ACCIONES</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>ICE General</td>
+              <td>{{ calcularIceGeneral().toFixed(3) }}/1</td>
+              <td>{{ getNivelIceGeneral().nivel }}</td>
+              <td>{{ getNivelIceGeneral().acciones }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Sección IEPM -->
+      <div *ngIf="showIEPM && iepmData" class="iepm-results-section">
+        <h3>RESULTADOS IEPM</h3>
+        
+        <!-- Resultado General -->
+        <div class="iepm-total">
+          <h4>Resultado General</h4>
+          <div class="total-card">
+            <p><strong>Puntaje:</strong> {{ iepmData.resultadoTotal?.puntaje?.toFixed(3) || 'N/A' }}/1</p>
+            <p><strong>Valoración:</strong> {{ iepmData.resultadoTotal?.valoracion || 'N/A' }}</p>
+            <p><strong>Criterio:</strong> {{ iepmData.resultadoTotal?.criterio || 'N/A' }}</p>
+          </div>
+        </div>
+        
+        <!-- Por Dimensión -->
+        <div class="iepm-dimensions">
+          <h4>Por Dimensión</h4>
+          <div class="dimensions-grid">
+            <div *ngFor="let dimension of iepmData.porDimension" class="dimension-card">
+              <h5>{{ dimension.dimension }}</h5>
+              <p><strong>Puntaje:</strong> {{ dimension.puntaje }}/{{ dimension.puntaje >= 5 ? 5 : '5' }}</p>
+              <p><strong>Porcentaje:</strong> {{ dimension.porcentaje.toFixed(1) }}%</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Por Indicador -->
+        <div class="iepm-indicators">
+          <h4>Por Indicador</h4>
+          <table class="indicators-table">
+            <thead>
+              <tr>
+                <th>Indicador</th>
+                <th>Dimensión</th>
+                <th>Puntaje</th>
+                <th>Porcentaje</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let indicador of iepmData.porIndicador">
+                <td>{{ indicador.indicador }}</td>
+                <td>{{ indicador.dimension }}</td>
+                <td>{{ indicador.puntaje }}/{{ indicador.puntaje >= 5 ? 5 : '5' }}</td>
+                <td>{{ indicador.porcentaje.toFixed(1) }}%</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <!-- Acciones Recomendadas -->
+        <div class="recommended-actions">
+          <h4>Acciones Recomendadas</h4>
+          <p><strong>Descripción:</strong> {{ iepmData.accionRecomendada.descripcion || 'N/A' }}</p>
+          <p><strong>Recomendaciones:</strong> {{ iepmData.accionRecomendada.recomendaciones || 'N/A' }}</p>
+          <p><strong>Rango:</strong> {{ iepmData.accionRecomendada.rango || 'N/A' }}</p>
+        </div>
+      </div>
+
+      <!-- Comentarios -->
+      <div class="comments-section" *ngIf="comentarios">
+        <h3>COMENTARIOS</h3>
+        <ion-card>
+          <ion-card-content>
+            <div class="comments-text" [innerHTML]="comentarios"></div>
+          </ion-card-content>
+        </ion-card>
+      </div>
+
+      <!-- Footer -->
+      <div class="print-footer">
+        <p>Reporte generado el {{ getCurrentDate() }} a las {{ getCurrentTime() }}</p>
+        <p>Sistema de Evaluación de Competencias Emprendedoras</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Botón de impresión flotante -->
+  <ion-fab vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button (click)="imprimir()">
+      <ion-icon name="print"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
+
+
+<style>
+/* Estilos para el contenedor del gráfico */
+.chart-container {
+  padding: 16px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  margin: 16px 0;
+}
+
+.chart-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.chart-controls ion-item {
+  flex: 1;
+  min-width: 200px;
+}
+
+.chart-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  position: relative;
+}
+
+.chart-info {
+  text-align: center;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #eee;
+}
+
+#pieChart {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.pie-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.legend-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: block;
+}
+
+.legend-label {
+  font-size: 14px;
+}
+
+/* Estilos adicionales para la página */
+.results-content {
+  --background: #f5f5f5;
+}
+
+.results-container {
+  padding: 16px;
+}
+
+.results-info {
+  background: white;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.data-box {
+  background: #f0f0f0;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: normal;
+}
+
+.results-section, .iepm-results-section {
+  background: white;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.competencias-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.competencia-item {
+  padding: 8px;
+  background: #f9f9f9;
+  border-radius: 4px;
+  border-left: 4px solid #3880ff;
+}
+
+.results-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 16px;
+}
+
+.results-table th, .results-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+.results-table th {
+  background: #f0f0f0;
+  font-weight: bold;
+}
+
+.iepm-total .total-card {
+  background: #f9f9f9;
+  padding: 16px;
+  border-radius: 8px;
+  margin-top: 8px;
+}
+
+.dimensions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.dimension-card {
+  background: #f9f9f9;
+  padding: 16px;
+  border-radius: 8px;
+  border-left: 4px solid #28a745;
+}
+
+.indicators-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 16px;
+}
+
+.indicators-table th, .indicators-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+.indicators-table th {
+  background: #f0f0f0;
+  font-weight: bold;
+}
+
+.recommended-actions {
+  background: #fff3cd;
+  padding: 16px;
+  border-radius: 8px;
+  margin-top: 16px;
+  border-left: 4px solid #ffc107;
+}
+
+.comments-section {
+  margin-top: 16px;
+}
+
+.print-footer {
+  text-align: center;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 2px solid #ddd;
+  font-size: 14px;
+  color: #666;
+}
+
+.loading-container, .error-container, .no-encuestas {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 50vh;
+  flex-direction: column;
+}
+
+.encuesta-selectors {
+  background: white;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.selector-item {
+  margin-bottom: 8px;
+}
+
+/* Estilos para impresión */
+@media print {
+  .chart-controls, ion-fab, ion-header {
+    display: none !important;
+  }
+  
+  .chart-container {
+    box-shadow: none;
+    border: 1px solid #ddd;
+  }
+  
+  .results-content {
+    --background: white;
+  }
+  
+  .results-container {
+    padding: 0;
+  }
+}
+</style>
