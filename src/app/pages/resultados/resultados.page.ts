@@ -135,7 +135,7 @@ interface DimensionInfo {
 })
 export class ResultadosPage implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('printContent', { static: false }) printContent!: ElementRef;
-  @ViewChild('pieChart', { static: true }) pieChart!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('pieChart', { static: false }) pieChart!: ElementRef<HTMLCanvasElement>;
   @ViewChild('iepmChart', { static: true }) iepmChart!: ElementRef;
   
 
@@ -398,15 +398,9 @@ verificarDatos() {
 }
 
  
-  // ====================================
-  // ✅ SOLUCIÓN: USAR ESTE MÉTODO EN LUGAR DEL ANTERIOR
-  // ====================================
-  // Método para crear gráfico de pastel con Chart.js (FUNCIONA CORRECTAMENTE)
-  // REEMPLAZA el método createPieChart() en tu archivo resultados.page.ts
   //********************************************************************************************* */
 
-// REEMPLAZA el método createPieChart() existente por este código simple:
-// REEMPLAZA el método createPieChart() existente por este código corregido:
+
 
 // MÉTODO CORREGIDO: createPieChart() - REEMPLAZA el método existente
 createPieChart(): void {
@@ -644,16 +638,7 @@ getCompetenciaPercentage(resultado: any): number {
 
   
 
- /* // ACTUALIZADO: Método para obtener el porcentaje de una competencia
-  getCompetenciaPercentage(resultado: any): number {
-    if (!this.resultados || this.resultados.length === 0) {
-      return 0;
-    }
-    
-    const total = this.resultados.reduce((sum, r) => sum + (r.valor || r.puntuacionCompetencia), 0);
-    const valor = resultado.valor || resultado.puntuacionCompetencia;
-    return total > 0 ? (valor / total) * 100 : 0;
-  }*/
+ 
 
 
   // CORREGIDO: Gráfico IEPM como gráfico de barras
@@ -1026,13 +1011,7 @@ getColorDimension(idDimension: number): string {
 
 
 
-// AGREGAR este método a tu clase ResultadosPage
-// Colocarlo después del método getColorDimension() (alrededor de la línea 900)
 
-/**
- * Método para obtener resultados filtrados
- * Se utiliza en el template para mostrar los resultados según filtros aplicados
- */
 getResultadosFiltrados(): Resultado[] {
   if (!this.resultados || this.resultados.length === 0) {
     return [];
@@ -1047,45 +1026,7 @@ getResultadosFiltrados(): Resultado[] {
   );
 }
 
-/**
- * Método alternativo si necesitas filtrado más específico
- * Descomenta y modifica según tus necesidades
- */
-/*
-getResultadosFiltrados(): Resultado[] {
-  if (!this.resultados || this.resultados.length === 0) {
-    return [];
-  }
-  
-  let resultadosFiltrados = [...this.resultados];
-  
-  // Ejemplo de filtros que puedes implementar:
-  
-  // 1. Filtrar por nivel de competencia
-  // if (this.filtroNivel) {
-  //   resultadosFiltrados = resultadosFiltrados.filter(resultado => {
-  //     const nivel = this.getNivelCompetencia(resultado.puntuacionCompetencia);
-  //     return nivel === this.filtroNivel;
-  //   });
-  // }
-  
-  // 2. Filtrar por rango de puntuación
-  // if (this.filtroMinimo !== null) {
-  //   resultadosFiltrados = resultadosFiltrados.filter(resultado => 
-  //     resultado.puntuacionCompetencia >= this.filtroMinimo
-  //   );
-  // }
-  
-  // 3. Filtrar por competencias específicas
-  // if (this.competenciasSeleccionadas.length > 0) {
-  //   resultadosFiltrados = resultadosFiltrados.filter(resultado => 
-  //     this.competenciasSeleccionadas.includes(resultado.idCompetencia)
-  //   );
-  // }
-  
-  return resultadosFiltrados;
-}
-*/
+
 
 /**
  * Método auxiliar para obtener el nivel de una competencia
