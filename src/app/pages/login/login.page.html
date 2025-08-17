@@ -13,11 +13,24 @@
 
     <ion-item>
       <ion-label position="floating">Contraseña</ion-label>
-      <ion-input [(ngModel)]="contrasena" name="contrasena" type="password" required></ion-input>
+      <ion-input
+        [(ngModel)]="contrasena"
+        name="contrasena"
+        type="password"
+        required
+      ></ion-input>
     </ion-item>
 
     <ion-button expand="full" type="submit" class="ion-margin-top">
       Iniciar sesión
+    </ion-button>
+    <ion-button
+      expand="full"
+      fill="clear"
+      color="medium"
+      (click)="openRecuperarContrasena()"
+    >
+      ¿Olvidaste tu contraseña?
     </ion-button>
   </form>
 </ion-content>
