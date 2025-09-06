@@ -131,28 +131,31 @@ export class ReporteriaPage implements OnInit {
   }
 
   exportPDF() {
-    const doc = new jsPDF();
+  const doc = new jsPDF();
 
-    doc.setFontSize(18);
-    doc.setTextColor(255, 0, 0);
-    doc.text('📄 Reporte Emprendedores', 14, 22); // icono PDF arriba
+  // Título en negro
+  doc.setFontSize(18);
+  doc.setTextColor(0, 0, 0); // negro
+  doc.text('Reporte Emprendedores', 14, 22);
 
-    autoTable(doc, {
-      startY: 30,
-      head: [this.displayedColumns.map((c) => c.toUpperCase())],
-      body: this.reporteFiltrado.map((r) =>
-        this.displayedColumns.map((c) => {
-          let val = r[c];
-          if (val instanceof Date) val = new Date(val).toLocaleDateString();
-          return val ?? '-';
-        })
-      ),
-      theme: 'grid',
-      headStyles: { fillColor: [33, 150, 243], textColor: 255 },
-      alternateRowStyles: { fillColor: [240, 248, 255] },
-    });
+  // Tabla con autoTable
+  autoTable(doc, {
+    startY: 30,
+    head: [this.displayedColumns.map(c => c.toUpperCase())],
+    body: this.reporteFiltrado.map(r =>
+      this.displayedColumns.map(c => {
+        let val = r[c];
+        if (val instanceof Date) val = new Date(val).toLocaleDateString();
+        return val ?? '-';
+      })
+    ),
+    theme: 'grid',
+    headStyles: { fillColor: [33, 150, 243], textColor: 255 }, // encabezado azul con texto blanco
+    alternateRowStyles: { fillColor: [240, 248, 255] }, // filas intercaladas azul claro
+  });
 
-    doc.save('reporte_emprendedores.pdf');
-  }
+  doc.save('reporte_emprendedores.pdf');
+}
+
   
 }
