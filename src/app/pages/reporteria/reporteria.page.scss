@@ -1,63 +1,55 @@
-.toolbar-reporteria {
+.header-content {
   display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  margin-bottom: 5px;
-  align-items: center;
-
-  ion-input {
-    flex: 1 1 150px;
-    min-width: 120px;
-  }
-
-  .buttons-reporteria {
-    display: flex;
-    gap: 5px;
-  }
-}
-
-.fecha-filtro {
-  display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: 10px;
-  margin-bottom: 10px;
 
-  ion-label {
-    font-weight: bold;
-    margin-right: 5px;
+  .logo {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
   }
 
-  ion-select {
-    width: 120px;
-    --min-width: 120px;
+  span {
+    font-weight: bold;
+    font-size: 18px;
+    color: white; // para que resalte sobre azul
   }
 }
 
 .table-wrapper {
   overflow-x: auto;
-  overflow-y: auto;
-  max-height: 65vh;
+  margin-top: 10px;
 }
 
 .table-reporteria {
   width: 100%;
-  min-width: 600px;
   border-collapse: collapse;
-  text-align: left;
-  font-size: 0.9rem;
 
   th, td {
-    border: 1px solid #1976d2;
-    padding: 6px 8px;
+    padding: 8px 10px;
+    text-align: left;
+    border: 1px solid #ccc;
   }
 
-  th {
-    background-color: #2196f3;
-    color: #fff;
+  thead {
+    background-color: #2196F3;
+    color: white;
   }
 
-  tr:nth-child(even) {
+  tbody tr:nth-child(even) {
     background-color: #f0f8ff;
+  }
+}
+
+.toolbar-reporteria {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 10px;
+
+  .buttons-reporteria {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
   }
 }

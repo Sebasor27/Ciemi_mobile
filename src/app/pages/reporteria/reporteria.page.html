@@ -1,6 +1,17 @@
 <ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>Reportería</ion-title>
+  <ion-toolbar color="primary">
+    <!-- Botón de regresar -->
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home"></ion-back-button>
+    </ion-buttons>
+
+    <!-- Logo y título -->
+    <ion-title>
+      <div class="header-content">
+        <img src="assets/LogoCentro.jpg" alt="Logo" class="logo">
+        <span>CIEMI UNIANDES</span>
+      </div>
+    </ion-title>
   </ion-toolbar>
 </ion-header>
 
@@ -21,8 +32,6 @@
       </ion-button>
     </div>
   </div>
-
-  <!-- Filtro de fecha compacto -->
 
   <!-- Tabla con scroll -->
   <div class="table-wrapper">
