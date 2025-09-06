@@ -1,16 +1,57 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
-    <ion-title>reporteria</ion-title>
-      <ion-buttons slot="start">
-      <ion-back-button defaultHref="/home"></ion-back-button>
-    </ion-buttons>
+    <ion-title>Reportería</ion-title>
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">reporteria</ion-title>
-    </ion-toolbar>
-  </ion-header>
+<ion-content [fullscreen]="true" class="ion-padding">
+
+  <!-- Filtros y botones -->
+  <div class="toolbar-reporteria">
+    <ion-input placeholder="Buscar por nombre o correo" [(ngModel)]="filtro" (ionInput)="filtrarReporte()"></ion-input>
+
+    <div class="buttons-reporteria">
+      <ion-button color="success" (click)="exportCSV()">
+        <ion-icon name="document-text-outline"></ion-icon>
+        CSV
+      </ion-button>
+      <ion-button color="danger" (click)="exportPDF()">
+        <ion-icon name="document-outline"></ion-icon>
+        PDF
+      </ion-button>
+    </div>
+  </div>
+
+  <!-- Filtro de fecha compacto -->
+
+  <!-- Tabla con scroll -->
+  <div class="table-wrapper">
+    <table class="table-reporteria">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Correo</th>
+          <th>Fecha Registro</th>
+          <th>Última Evaluación</th>
+          <th>Puntaje IEPM</th>
+          <th>Puntaje ICE</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let e of reporteFiltrado">
+          <td>{{ e.nombre }}</td>
+          <td>{{ e.correo }}</td>
+          <td>{{ e.fechaRegistro | date:'shortDate' }}</td>
+          <td>{{ e.fechaUltimaEvaluacion ? (e.fechaUltimaEvaluacion | date:'shortDate') : '-' }}</td>
+          <td>{{ e.puntajeIEPM ?? '-' }}</td>
+          <td>{{ e.puntajeICE ?? '-' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
 </ion-content>
+
+
+
+

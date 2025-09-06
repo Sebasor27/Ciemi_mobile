@@ -1,0 +1,63 @@
+.toolbar-reporteria {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 5px;
+  align-items: center;
+
+  ion-input {
+    flex: 1 1 150px;
+    min-width: 120px;
+  }
+
+  .buttons-reporteria {
+    display: flex;
+    gap: 5px;
+  }
+}
+
+.fecha-filtro {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+
+  ion-label {
+    font-weight: bold;
+    margin-right: 5px;
+  }
+
+  ion-select {
+    width: 120px;
+    --min-width: 120px;
+  }
+}
+
+.table-wrapper {
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 65vh;
+}
+
+.table-reporteria {
+  width: 100%;
+  min-width: 600px;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.9rem;
+
+  th, td {
+    border: 1px solid #1976d2;
+    padding: 6px 8px;
+  }
+
+  th {
+    background-color: #2196f3;
+    color: #fff;
+  }
+
+  tr:nth-child(even) {
+    background-color: #f0f8ff;
+  }
+}

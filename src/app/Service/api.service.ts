@@ -3,15 +3,12 @@ import { HttpClient } from '@angular/common/http';
 import { AuthService } from './auth.service';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class ApiService {
   private baseUrl = 'http://localhost:5288/api'; // Ajusta tu URL
 
-  constructor(
-    private http: HttpClient,
-    private authService: AuthService
-  ) { }
+  constructor(private http: HttpClient, private authService: AuthService) {}
 
   // Obtiene todos los emprendedores
   getEmprendedores() {
@@ -28,21 +25,33 @@ export class ApiService {
     return this.http.put(`${this.baseUrl}/Emprendedores/activate/${id}`, {});
   }
   // Obtiene detalles de un emprendedor
-getEmprendedor(id: number) {
-  return this.http.get(`${this.baseUrl}/Emprendedores/${id}`);
-}
+  getEmprendedor(id: number) {
+    return this.http.get(`${this.baseUrl}/Emprendedores/${id}`);
+  }
 
-// Actualiza emprendedor
-updateEmprendedor(id: number, data: any) {
-  return this.http.put(`${this.baseUrl}/Emprendedores/${id}`, data);
-}
+  // Actualiza emprendedor
+  updateEmprendedor(id: number, data: any) {
+    return this.http.put(`${this.baseUrl}/Emprendedores/${id}`, data);
+  }
 
-// Obtiene encuestas del emprendedor
-getEncuestasEmprendedor(id: number) {
-  return this.http.get(`${this.baseUrl}/Emprendedores/${id}/encuestas`);
-}
-// Crea nuevo emprendedor
-createEmprendedor(data: any) {
-  return this.http.post(`${this.baseUrl}/Emprendedores`, data);
-}
+  // Obtiene encuestas del emprendedor
+  getEncuestasEmprendedor(id: number) {
+    return this.http.get(`${this.baseUrl}/Emprendedores/${id}/encuestas`);
+  }
+  // Crea nuevo emprendedor
+  createEmprendedor(data: any) {
+    return this.http.post(`${this.baseUrl}/Emprendedores`, data);
+  }
+
+  // Obtiene respuestas de una encuesta de un emprendedor
+  getRespuestasIepm(idEncuesta: number, idEmprendedor: number) {
+    return this.http.get(
+      `${this.baseUrl}/RespuestasIepm/encuesta/${idEncuesta}/emprendedor/${idEmprendedor}`
+    );
+  }
+
+  // Obtiene el resumen ICE de un emprendedor
+  getResumenIce(idEmprendedor: number) {
+    return this.http.get(`${this.baseUrl}/ResumenIce/${idEmprendedor}`);
+  }
 }
