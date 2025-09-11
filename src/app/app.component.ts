@@ -16,7 +16,12 @@ import {
   logOutOutline,
   checkmarkCircleOutline,
   alertCircleOutline,
-  informationCircleOutline
+  informationCircleOutline,
+  printOutline,
+  chatbubbleOutline,
+  print,
+  refreshOutline,
+  bugOutline
 } from 'ionicons/icons';
 
 @Component({
@@ -56,7 +61,12 @@ export class AppComponent implements OnInit {
       'log-out-outline': logOutOutline,
       'checkmark-circle-outline': checkmarkCircleOutline,
       'alert-circle-outline': alertCircleOutline,
-      'information-circle-outline': informationCircleOutline
+      'information-circle-outline': informationCircleOutline,
+      'print-outline': printOutline,
+      'chatbubble-outline': chatbubbleOutline,
+      'print': print,
+      'refresh-outline': refreshOutline,
+      'bug-outline': bugOutline
     });
   }
 }
