@@ -1,0 +1,55 @@
+.header-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  .logo {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+  }
+
+  span {
+    font-weight: bold;
+    font-size: 18px;
+    color: white; // para que resalte sobre azul
+  }
+}
+
+.table-wrapper {
+  overflow-x: auto;
+  margin-top: 10px;
+}
+
+.table-reporteria {
+  width: 100%;
+  border-collapse: collapse;
+
+  th, td {
+    padding: 8px 10px;
+    text-align: left;
+    border: 1px solid #ccc;
+  }
+
+  thead {
+    background-color: #2196F3;
+    color: white;
+  }
+
+  tbody tr:nth-child(even) {
+    background-color: #f0f8ff;
+  }
+}
+
+.toolbar-reporteria {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 10px;
+
+  .buttons-reporteria {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+}
