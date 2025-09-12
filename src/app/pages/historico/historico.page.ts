@@ -154,4 +154,7 @@ export class HistoricoPage implements OnInit {
     const date = new Date(fecha);
     return `Inactivo desde ${date.toLocaleDateString('es-ES')}`;
   }
+  volver() {
+    this.router.navigate(['/registro-emp']);
+  }
 }
