@@ -8,20 +8,12 @@ import {
   IonToolbar, 
   IonButton,
   IonCard,
-  IonCardContent,
-  IonCardHeader,
-  IonCardTitle,
   IonIcon,
   IonModal,
   IonButtons,
-  IonItem,
-  IonLabel,
-  IonText,
-  IonGrid,
-  IonRow,
-  IonCol,
-  IonBadge,
   IonAvatar,
+  IonBackButton,
+  IonCardContent
 } from '@ionic/angular/standalone';
 import { Router, ActivatedRoute } from '@angular/router';
 import { addIcons } from 'ionicons'
@@ -48,21 +40,13 @@ import {
     FormsModule,
     IonButton,
     IonCard,
-    IonCardContent,
-    IonCardHeader,
-    IonCardTitle,
     IonIcon,
     IonModal,
     IonButtons,
-    IonItem,
-    IonLabel,
-    IonText,
-    IonGrid,
-    IonRow,
-    IonCol,
-    IonBadge,
     IonAvatar,
-    IonIcon
+    IonIcon,
+    IonBackButton,
+    IonCardContent
   ]
 })
 export class VentanaEncuestasPage implements OnInit {
