@@ -1,51 +1,25 @@
-import { Component, OnInit, ViewChild, ElementRef, AfterViewInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy, ViewChild, ElementRef, ChangeDetectorRef, NgZone } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-
-import { Chart, registerables } from 'chart.js';
-import { ChangeDetectorRef } from '@angular/core';
-import { NgZone } from '@angular/core';
-import { ToastController } from '@ionic/angular';
-
+import { ToastController, AlertController } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { 
-  IonContent, 
-  IonHeader, 
-  IonTitle, 
-  IonToolbar, 
-  IonButton,
-  IonIcon,
-  IonLabel,
-  IonText,
-  IonItem, 
-  IonList, 
-  IonSelect,
-  IonSelectOption,
-  IonSpinner,
-  IonCard,
-  IonCardContent,
-  IonCardHeader,
-  IonCardTitle,
-  IonAlert,
-  IonToast
-} from '@ionic/angular/standalone';
 import { IonicModule } from '@ionic/angular';
-import { ResultadosService } from '../../services/resultados.service';
-import { firstValueFrom } from 'rxjs';
+import { Chart, registerables } from 'chart.js';
+import { firstValueFrom, Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
-// Registramos todos los componentes necesarios de Chart.js
+import { ResultadosService } from '../../services/resultados.service';
+
 Chart.register(...registerables);
 
-// Interfaces
 interface Resultado {
   idCompetencia: number;
   puntuacionCompetencia: number;
-  valor?: number; // Agregado para compatibilidad con el gráfico
-  nombre: string;     // Nombre de la competencia
-  color: string;     // Color para gráficos y visualización
-  
-  nivel?: string;    // Nivel de competencia (opcional)
-  acciones?: string; 
+  valor?: number;
+  nombre: string;
+  color: string;
+  nivel?: string;
+  acciones?: string;
 }
 
 interface Resumen {
@@ -53,34 +27,15 @@ interface Resumen {
 }
 
 interface Emprendedor {
+  idEmprendedor: number;
   nombre: string;
+  email?: string;
 }
 
 interface Encuesta {
   idEncuesta: number;
   fechaEvaluacion: string;
   fechaAplicacion: string;
-}
-
-interface IepmData {
-  iepm: {
-    iepm: number;
-    valoracion: string;
-  };
-  dimensiones: Array<{
-    idDimension: number;
-    valor: number;
-  }>;
-  indicadores: Array<{
-    idIndicador: number;
-    valor: number;
-  }>;
-  accionMejora: {
-    descripcion: string;
-    recomendaciones: string;
-    rangoMin: number;
-    rangoMax: number;
-  };
 }
 
 interface IepmTransformado {
@@ -121,27 +76,29 @@ interface DimensionInfo {
   nombre: string;
 }
 
+interface TooltipData {
+  x: number;
+  y: number;
+  content: string;
+  visible: boolean;
+}
+
 @Component({
   selector: 'app-resultados',
   templateUrl: './resultados.page.html',
   styleUrls: ['./resultados.page.scss'],
   standalone: true,
-  imports: [
-    IonicModule,
-    CommonModule,
-    FormsModule,
-    
-  ],
+  imports: [IonicModule, CommonModule, FormsModule]
 })
 export class ResultadosPage implements OnInit, AfterViewInit, OnDestroy {
+
   @ViewChild('printContent', { static: false }) printContent!: ElementRef;
   @ViewChild('pieChart', { static: false }) pieChart!: ElementRef<HTMLCanvasElement>;
   @ViewChild('iepmChart', { static: true }) iepmChart!: ElementRef;
-  
 
-  // Propiedades del gráfico
   private chart: Chart | null = null;
   private iepmChartInstance: Chart | null = null;
+  private destroy$ = new Subject<void>();
 
   idEmprendedor: string | null = null;
   resultados: Resultado[] = [];
@@ -152,32 +109,30 @@ export class ResultadosPage implements OnInit, AfterViewInit, OnDestroy {
   encuestasIEPM: Encuesta[] = [];
   encuestaSeleccionadaIEPM: number | null = null;
   iepmData: IepmTransformado | null = null;
+
   showIEPM = false;
-  comentarios = '';
-  comentariosSeleccionados: string[] = [];
   showSideComments = false;
   isLoading = true;
   error: string | null = null;
-  showToast = false;
-  toastMessage = '';
-  showAlert = false;
-  alertHeader = '';
-  alertMessage = '';
-  alertButtons: any[] = [];
+  tipoGrafico = 'pie';
+  activeTooltip: TooltipData | null = null;
 
+  comentarios = '';
+  comentariosSeleccionados: string[] = [];
 
+  // NUEVAS PROPIEDADES PARA COMENTARIOS
+  nuevoComentario: string = '';
+  comentariosAsesor: Array<{
+    id: number;
+    fecha: string;
+    asesor: string;
+    comentario: string;
+    tipo: 'observacion' | 'recomendacion' | 'nota';
+  }> = [];
 
-  
-  tipoGrafico: string = 'barras';
-datos: any[] = [];
-  
-  // Propiedad para tooltip
-  activeTooltip: any = null;
-
-  // Datos estáticos
-  competenciasNombres = [
+  readonly competenciasNombres = [
     'Comportamiento Emprendedor',
-    'Creatividad',
+    'Creatividad', 
     'Liderazgo',
     'Personalidad Proactiva',
     'Tolerancia a la incertidumbre',
@@ -185,50 +140,15 @@ datos: any[] = [];
     'Pensamiento Estratégico',
     'Proyección Social',
     'Orientación Financiera',
-    'Orientación Tecnológica e innovación',
+    'Orientación Tecnológica e innovación'
   ];
 
-  // Colores actualizados para las competencias
-  colors = [
+  readonly colors = [
     '#e91e63', '#9c27b0', '#3f51b5', '#2196f3', '#00bcd4',
-    '#009688', '#4caf50', '#8bc34a', '#cddc39', '#ffeb3b',
-    '#ffc107', '#ff9800', '#ff5722', '#795548', '#9e9e9e'
+    '#009688', '#4caf50', '#8bc34a', '#cddc39', '#ffeb3b'
   ];
 
-  comentariosPredefinidos = {
-    Capacitación: [
-      {
-        texto: 'Capacitación en programas de formación empresarial - Desarrollo de competencias en gestión y administración',
-        explicacion: 'Recomendado para fortalecer habilidades básicas de gestión',
-      },
-      {
-        texto: 'Capacitación en dirección estratégica - Enfoque en toma de decisiones y liderazgo organizacional',
-        explicacion: 'Para emprendedores que necesitan mejorar su visión estratégica',
-      },
-    ],
-    Herramientas: [
-      {
-        texto: 'Herramientas económicas y financieras - Análisis financiero y gestión de recursos',
-        explicacion: 'Esencial para mejorar la salud financiera del negocio',
-      },
-      {
-        texto: 'Herramientas de tecnología e innovación - Aplicación de tecnologías emergentes en negocios',
-        explicacion: 'Para mantenerse competitivo en el mercado actual',
-      },
-    ],
-    Evaluación: [
-      {
-        texto: 'Evaluación del marco legal - Análisis de normativas y regulaciones para su cumplimiento',
-        explicacion: 'Importante para evitar problemas legales',
-      },
-      {
-        texto: 'Identificación de deficiencias en servicios municipales - Trabajo con gobiernos locales para mejorar servicios',
-        explicacion: 'Relevante para negocios dependientes de infraestructura municipal',
-      },
-    ],
-  };
-  // Propiedades para indicadores y dimensiones - CORREGIDAS
-  private indicadoresInfo: IndicadorInfo[] = [
+  private readonly indicadoresInfo: IndicadorInfo[] = [
     { idIndicador: 1, nombre: 'Capacidad de Planificación Financiera', destinatario: 'Emprendedor' },
     { idIndicador: 2, nombre: 'Gestión de Recursos Económicos', destinatario: 'Emprendedor' },
     { idIndicador: 3, nombre: 'Análisis de Viabilidad Económica', destinatario: 'Emprendedor' },
@@ -240,7 +160,7 @@ datos: any[] = [];
     { idIndicador: 9, nombre: 'Adaptación al Cambio', destinatario: 'Emprendedor' }
   ];
 
-  private dimensionesInfo: DimensionInfo[] = [
+  private readonly dimensionesInfo: DimensionInfo[] = [
     { idDimension: 1, nombre: 'Dimensión Económica' },
     { idDimension: 2, nombre: 'Dimensión Operacional' },
     { idDimension: 3, nombre: 'Dimensión de Innovación' }
@@ -248,14 +168,85 @@ datos: any[] = [];
 
   constructor(
     private route: ActivatedRoute,
+    private router: Router,
     private cdr: ChangeDetectorRef,
-    public router: Router,
+    private ngZone: NgZone,
     private toastController: ToastController,
-    private resultadosService: ResultadosService,
-    private ngZone: NgZone
-) {}
+    private alertController: AlertController,
+    private resultadosService: ResultadosService
+  ) {}
+
+  ngOnInit(): void {
+    console.log('Inicializando ResultadosPage');
+    
+    this.idEmprendedor = this.route.snapshot.paramMap.get('id');
+
+    if (!this.idEmprendedor) {
+      this.handleError('No se encontró el ID del emprendedor');
+      return;
+    }
+
+    this.initializeComponent();
+  }
+
+  ngAfterViewInit(): void {
+    console.log('Componente después de inicializar vista');
+    
+    setTimeout(() => {
+      if (this.resultados && this.resultados.length > 0) {
+        this.createPieChart();
+      }
+    }, 1000);
+  }
+
   ngOnDestroy(): void {
-    // Destruir gráficos para evitar memory leaks
+    console.log('Limpiando componente');
+    
+    this.destroy$.next();
+    this.destroy$.complete();
+    
+    this.destroyCharts();
+  }
+
+  // MÉTODOS DE NAVEGACIÓN Y RECARGA
+  navigateToHome(): void {
+    this.router.navigate(['/home']);
+  }
+
+  reloadComments(): void {
+    this.cargarComentarios();
+    console.log('Comentarios recargados:', this.comentariosAsesor.length);
+  }
+
+  // INICIALIZACIÓN
+  private async initializeComponent(): Promise<void> {
+    try {
+      this.loadSavedComments();
+      
+      const promises = [
+        this.fetchIndicadoresDimensiones().catch(err => {
+          console.error('Error en fetchIndicadoresDimensiones:', err);
+          return null;
+        }),
+        this.fetchEncuestas().catch(err => {
+          console.error('Error en fetchEncuestas:', err);
+          return null;
+        }),
+        this.fetchEncuestasIEPM().catch(err => {
+          console.error('Error en fetchEncuestasIEPM:', err);
+          return null;
+        })
+      ];
+
+      await Promise.all(promises);
+
+    } catch (error) {
+      console.error('Error en inicialización:', error);
+      this.handleError('Error al inicializar el componente');
+    }
+  }
+
+  private destroyCharts(): void {
     if (this.chart) {
       this.chart.destroy();
       this.chart = null;
@@ -267,222 +258,441 @@ datos: any[] = [];
     }
   }
 
-
-  ngOnInit() {
-    this.idEmprendedor = this.route.snapshot.paramMap.get('id');
-
-    if (!this.idEmprendedor) {
-      this.error = 'No se encontró el ID del emprendedor';
-      this.isLoading = false;
-      return;
-    }
-
-    this.loadSavedComments();
-    this.fetchIndicadoresDimensiones();
-    this.fetchEncuestas();
-    this.fetchEncuestasIEPM();
-
-    
-  }
-
-
-onEncuestaSeleccionadaIEPMChange(event: any) {
-  console.log('Encuesta IEPM seleccionada:', event.detail.value);
-  
-  try {
-    const valor = event.detail.value;
-    this.encuestaSeleccionadaIEPM = valor ? Number(valor) : null;
-    
-    this.cargarDatosEncuesta();
-    console.log('Encuesta IEPM cambiada exitosamente');
-    
-  } catch (error) {
-    console.error('Error al cambiar encuesta IEPM:', error);
-  }
-}
-
-// 3. ACTUALIZA el método auxiliar:
-private cargarDatosEncuesta() {
-  console.log('Cargando datos para encuesta:', this.encuestaSeleccionadaIEPM);
-  
-  if (this.encuestaSeleccionadaIEPM !== null) {
-    console.log('Datos cargados para ID:', this.encuestaSeleccionadaIEPM);
-    // Aquí va tu lógica específica
-  }
-}
-
-
-
-
-
-
-
-  // AQUÍ AGREGAS EL MÉTODO cambiarTipoGrafico()
-  cambiarTipoGrafico(valor: string) {
-    console.log('Cambiando tipo de gráfico a:', valor);
-    
+  // CARGA DE DATOS
+  private async fetchIndicadoresDimensiones(): Promise<void> {
     try {
-      this.tipoGrafico = valor;
-      this.actualizarGrafico();
-      console.log('Tipo de gráfico cambiado exitosamente');
+      const data = await firstValueFrom(
+        this.resultadosService.getIndicadoresDimensiones()
+          .pipe(takeUntil(this.destroy$))
+      );
+      
+      console.log('Indicadores y dimensiones cargados:', data?.length || 0);
     } catch (error) {
-      console.error('Error al cambiar tipo de gráfico:', error);
+      console.error('Error al cargar indicadores y dimensiones:', error);
     }
   }
-  
-  private actualizarGrafico() {
-    console.log('Actualizando gráfico con tipo:', this.tipoGrafico);
-    
-    switch (this.tipoGrafico) {
-      case 'barras':
-        console.log('Configurando gráfico de barras');
-        break;
-      case 'lineas':
-        console.log('Configurando gráfico de líneas');
-        break;
-      case 'circular':
-        console.log('Configurando gráfico circular');
-        break;
-      default:
-        console.log('Tipo de gráfico no reconocido');
+
+  private async fetchEncuestas(): Promise<void> {
+    try {
+      const data = await firstValueFrom(
+        this.resultadosService.getEncuestas(Number(this.idEmprendedor))
+          .pipe(takeUntil(this.destroy$))
+      );
+      
+      this.encuestas = data;
+      
+      if (data.length > 0) {
+        this.encuestaSeleccionada = data[0].idEncuesta;
+        await this.fetchResultados();
+      }
+
+      console.log('Encuestas ICE cargadas:', data.length);
+    } catch (error) {
+      console.error('Error al cargar encuestas ICE:', error);
+      this.handleError('Error al cargar encuestas ICE');
     }
   }
-verificarDatos() {
-  console.log('Verificando datos...');
-  
-  try {
-    // Verificar si hay datos disponibles
-    if (!this.datos || this.datos.length === 0) {
-      console.warn('No hay datos disponibles');
-      alert('No hay datos para mostrar');
+
+  private async fetchEncuestasIEPM(): Promise<void> {
+    try {
+      const data = await firstValueFrom(
+        this.resultadosService.getEncuestasIEPM(Number(this.idEmprendedor))
+          .pipe(takeUntil(this.destroy$))
+      );
+      
+      this.encuestasIEPM = data;
+      
+      if (data.length > 0) {
+        this.encuestaSeleccionadaIEPM = data[0].idEncuesta;
+        await this.fetchIEPMData();
+      }
+
+      console.log('Encuestas IEPM cargadas:', data.length);
+    } catch (error) {
+      console.error('Error al cargar encuestas IEPM:', error);
+      this.handleError('Error al cargar encuestas IEPM');
+    }
+  }
+
+  // MÉTODO ACTUALIZADO fetchResultados CON ALERTAS
+  private async fetchResultados(): Promise<void> {
+    if (!this.encuestaSeleccionada) {
+      console.warn('No hay encuesta ICE seleccionada');
+      await this.showAlert(
+        'Sin selección', 
+        'No hay una encuesta seleccionada. Por favor selecciona una encuesta para ver los resultados.'
+      );
       return;
     }
-    
-    // Verificar integridad de los datos
-    const datosValidos = this.datos.every(item => 
-      item && typeof item === 'object'
-    );
-    
-    if (!datosValidos) {
-      console.warn('Algunos datos no son válidos');
-      alert('Algunos datos no son válidos');
+
+    try {
+      console.log('Cargando resultados ICE para encuesta:', this.encuestaSeleccionada);
+      this.isLoading = true;
+      this.error = null;
+
+      const [emprendedorData, resultadosData] = await Promise.all([
+        firstValueFrom(this.resultadosService.getEmprendedor(Number(this.idEmprendedor)).pipe(takeUntil(this.destroy$))),
+        firstValueFrom(this.resultadosService.getResultadosResumen(Number(this.idEmprendedor), this.encuestaSeleccionada).pipe(takeUntil(this.destroy$)))
+      ]);
+
+      this.emprendedor = emprendedorData;
+      this.resultados = resultadosData.resultados || [];
+      this.resumen = resultadosData.resumen || null;
+
+      // NUEVA VERIFICACIÓN - MOSTRAR ALERTA SI NO HAY RESULTADOS
+      if (!this.resultados || this.resultados.length === 0) {
+        await this.showAlert(
+          'Sin resultados', 
+          'No se encontraron resultados para este emprendedor en la encuesta seleccionada. Verifica que la evaluación haya sido completada correctamente.'
+        );
+        console.warn('No hay resultados disponibles para mostrar');
+        return;
+      }
+
+      // NUEVA VERIFICACIÓN - ALERTA SI EMPRENDEDOR NO EXISTE
+      if (!this.emprendedor) {
+        await this.showAlert(
+          'Emprendedor no encontrado', 
+          'No se pudo cargar la información del emprendedor. Verifica que el ID sea correcto.'
+        );
+        return;
+      }
+
+      this.validarYTransformarDatos();
+      
+      // CARGAR COMENTARIOS EXISTENTES
+      this.cargarComentarios();
+      
+      console.log('Resultados ICE cargados:', {
+        emprendedor: this.emprendedor?.nombre,
+        resultados: this.resultados.length,
+        valorTotal: this.resumen?.valorIceTotal
+      });
+
+      setTimeout(() => this.createPieChart(), 300);
+
+    } catch (error) {
+      console.error('Error al cargar resultados ICE:', error);
+      
+      // MEJORAR MANEJO DE ERRORES CON ALERTAS ESPECÍFICAS
+      let errorMessage = 'Error al cargar resultados ICE';
+      if (error instanceof Error) {
+        if (error.message.includes('404')) {
+          errorMessage = 'No se encontraron datos para este emprendedor. Verifica que haya completado las evaluaciones.';
+        } else if (error.message.includes('403')) {
+          errorMessage = 'No tienes permisos para ver estos resultados.';
+        } else if (error.message.includes('500')) {
+          errorMessage = 'Error del servidor. Intenta nuevamente en unos minutos.';
+        }
+      }
+      
+      await this.showAlert('Error de carga', errorMessage);
+      this.handleError(errorMessage);
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
+  // NUEVOS MÉTODOS PARA MANEJO DE COMENTARIOS
+  
+  /**
+   * Agregar un nuevo comentario de asesor
+   */
+  async agregarComentario(): Promise<void> {
+    if (!this.nuevoComentario?.trim()) {
+      await this.showToast('Ingresa un comentario válido', 'warning');
       return;
     }
-    
-    // Si llegamos aquí, los datos están bien
-    console.log('Datos verificados correctamente');
-    alert('Datos verificados correctamente');
-    
-  } catch (error) {
-    console.error('Error al verificar datos:', error);
-    alert('Error al verificar datos');
-  }
-}
- ngAfterViewInit(): void {
-  console.log('🔄 Componente después de inicializar vista');
-  
-  // Esperar un momento para que todo se inicialice
-  setTimeout(() => {
-    console.log('⏰ Verificando datos para gráfico...');
-    
-    // Si ya hay datos, crear el gráfico
-    if (this.resultados && this.resultados.length > 0) {
-      console.log('✅ Datos disponibles, creando gráfico');
-      this.createPieChart();
-    } else {
-      console.log('⚠️ No hay datos aún, esperando...');
-      // Crear gráfico de prueba mientras tanto
-      this.createPieChart();
+
+    if (!this.idEmprendedor || !this.encuestaSeleccionada) {
+      await this.showToast('Error: No hay emprendedor o encuesta seleccionada', 'danger');
+      return;
     }
-  }, 2000); // Aumentar el tiempo de espera a 2 segundos
-}
 
- 
-  //********************************************************************************************* */
+    try {
+      const comentario = {
+        id: Date.now(), // ID temporal
+        fecha: new Date().toISOString(),
+        asesor: 'Asesor', // TODO: Obtener desde servicio de autenticación
+        comentario: this.nuevoComentario.trim(),
+        tipo: 'observacion' as const
+      };
 
+      // GUARDAR EN SERVICIO (implementar en tu servicio)
+      // await this.resultadosService.guardarComentario(
+      //   Number(this.idEmprendedor), 
+      //   this.encuestaSeleccionada, 
+      //   comentario
+      // );
 
-
-// MÉTODO CORREGIDO: createPieChart() - REEMPLAZA el método existente
-createPieChart(): void {
-  console.log('🚀 Iniciando creación del gráfico de competencias...');
-  
-  // 1. Verificar que el canvas existe
-  if (!this.pieChart?.nativeElement) {
-    console.error('❌ Canvas no disponible');
-    return;
-  }
-
-  // 2. Verificar que hay datos
-  if (!this.resultados || this.resultados.length === 0) {
-    console.error('❌ No hay datos de resultados');
-    this.createTestChart(); // Crear gráfico de prueba
-    return;
-  }
-
-  console.log('📊 Datos disponibles:', this.resultados.length, 'competencias');
-
-  // 3. Destruir gráfico anterior si existe
-  if (this.chart) {
-    this.chart.destroy();
-    this.chart = null;
-  }
-
-  // 4. Obtener contexto del canvas
-  const ctx = this.pieChart.nativeElement.getContext('2d');
-  if (!ctx) {
-    console.error('❌ No se pudo obtener el contexto 2D del canvas');
-    return;
-  }
-
-  // 5. Preparar datos para el gráfico
-  const labels: string[] = [];
-  const valores: number[] = [];
-  const colores: string[] = [];
-
-  // 6. Procesar cada competencia
-  this.resultados.forEach((resultado, index) => {
-    // Obtener el nombre de la competencia
-    const nombreCompetencia = this.competenciasNombres[resultado.idCompetencia - 1] || 
-                              `Competencia ${resultado.idCompetencia}`;
-    
-    // Obtener el valor (usar puntuacionCompetencia o valor)
-    const valorCompetencia = resultado.puntuacionCompetencia || resultado.valor || 0;
-    
-    // Solo agregar si el valor es mayor a 0
-    if (valorCompetencia > 0) {
-      labels.push(nombreCompetencia);
-      valores.push(valorCompetencia);
-      colores.push(this.colors[index % this.colors.length]);
+      // AGREGAR LOCALMENTE
+      this.comentariosAsesor.unshift(comentario);
+      
+      // GUARDAR EN ALMACENAMIENTO LOCAL TEMPORAL
+      this.guardarComentariosLocal();
+      
+      // LIMPIAR CAMPO
+      this.nuevoComentario = '';
+      
+      await this.showToast('Comentario agregado exitosamente', 'success');
+      
+    } catch (error) {
+      console.error('Error al agregar comentario:', error);
+      await this.showToast('Error al guardar el comentario', 'danger');
     }
-  });
-
-  // 7. Verificar que tenemos datos para graficar
-  if (labels.length === 0) {
-    console.warn('⚠️ No hay valores válidos para graficar');
-    this.createTestChart(); // Crear gráfico de prueba
-    return;
   }
 
-  console.log('✅ Datos procesados:', {
-    labels: labels.length,
-    valores: valores.length,
-    colores: colores.length
-  });
+  /**
+   * Eliminar comentario
+   */
+  async eliminarComentario(comentarioId: number): Promise<void> {
+    const alert = await this.alertController.create({
+      header: 'Confirmar eliminación',
+      message: '¿Estás seguro de que deseas eliminar este comentario?',
+      buttons: [
+        {
+          text: 'Cancelar',
+          role: 'cancel'
+        },
+        {
+          text: 'Eliminar',
+          role: 'destructive',
+          handler: async () => {
+            try {
+              // ELIMINAR DEL SERVICIO
+              // await this.resultadosService.eliminarComentario(comentarioId);
+              
+              // ELIMINAR LOCALMENTE
+              this.comentariosAsesor = this.comentariosAsesor.filter(c => c.id !== comentarioId);
+              this.guardarComentariosLocal();
+              
+              await this.showToast('Comentario eliminado', 'success');
+            } catch (error) {
+              console.error('Error al eliminar comentario:', error);
+              await this.showToast('Error al eliminar comentario', 'danger');
+            }
+          }
+        }
+      ]
+    });
 
-  // 8. Crear el gráfico
-  try {
+    await alert.present();
+  }
+
+  /**
+   * Cambiar tipo de comentario
+   */
+  async cambiarTipoComentario(comentarioId: number, nuevoTipo: 'observacion' | 'recomendacion' | 'nota'): Promise<void> {
+    try {
+      const comentario = this.comentariosAsesor.find(c => c.id === comentarioId);
+      if (comentario) {
+        comentario.tipo = nuevoTipo;
+        this.guardarComentariosLocal();
+        
+        // TODO: Actualizar en servicio
+        // await this.resultadosService.actualizarComentario(comentario);
+        
+        await this.showToast(`Comentario marcado como ${nuevoTipo}`, 'success');
+      }
+    } catch (error) {
+      console.error('Error al cambiar tipo de comentario:', error);
+      await this.showToast('Error al actualizar comentario', 'danger');
+    }
+  }
+
+  /**
+   * Cargar comentarios existentes
+   */
+  private cargarComentarios(): void {
+    try {
+      // CARGAR DESDE ALMACENAMIENTO LOCAL TEMPORAL
+      const comentariosGuardados = localStorage.getItem(`comentarios_${this.idEmprendedor}_${this.encuestaSeleccionada}`);
+      if (comentariosGuardados) {
+        this.comentariosAsesor = JSON.parse(comentariosGuardados);
+      }
+      
+      // TODO: Implementar carga desde servicio
+      // this.resultadosService.getComentarios(Number(this.idEmprendedor), this.encuestaSeleccionada)
+      //   .pipe(takeUntil(this.destroy$))
+      //   .subscribe(comentarios => {
+      //     this.comentariosAsesor = comentarios;
+      //   });
+      
+    } catch (error) {
+      console.error('Error al cargar comentarios:', error);
+      this.comentariosAsesor = [];
+    }
+  }
+
+  /**
+   * Guardar comentarios en almacenamiento local (temporal)
+   */
+  private guardarComentariosLocal(): void {
+    try {
+      localStorage.setItem(
+        `comentarios_${this.idEmprendedor}_${this.encuestaSeleccionada}`, 
+        JSON.stringify(this.comentariosAsesor)
+      );
+    } catch (error) {
+      console.error('Error al guardar comentarios localmente:', error);
+    }
+  }
+
+  /**
+   * Obtener color según tipo de comentario
+   */
+  getColorTipoComentario(tipo: string): string {
+    switch (tipo) {
+      case 'observacion': return 'primary';
+      case 'recomendacion': return 'success';
+      case 'nota': return 'warning';
+      default: return 'medium';
+    }
+  }
+
+  /**
+   * Obtener icono según tipo de comentario
+   */
+  getIconoTipoComentario(tipo: string): string {
+    switch (tipo) {
+      case 'observacion': return 'eye-outline';
+      case 'recomendacion': return 'checkmark-circle-outline';
+      case 'nota': return 'document-text-outline';
+      default: return 'chatbubble-outline';
+    }
+  }
+
+  /**
+   * Formatear fecha para mostrar
+   */
+  formatearFechaComentario(fecha: string): string {
+    try {
+      const fechaObj = new Date(fecha);
+      return fechaObj.toLocaleDateString() + ' ' + fechaObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    } catch {
+      return 'Fecha inválida';
+    }
+  }
+
+  // RESTO DE MÉTODOS EXISTENTES...
+
+  private async fetchIEPMData(): Promise<void> {
+    if (!this.encuestaSeleccionadaIEPM) {
+      console.warn('No hay encuesta IEPM seleccionada');
+      return;
+    }
+
+    try {
+      console.log('Cargando datos IEPM para encuesta:', this.encuestaSeleccionadaIEPM);
+      this.isLoading = true;
+
+      const data = await firstValueFrom(
+        this.resultadosService.getResultadosIEPM(Number(this.idEmprendedor), this.encuestaSeleccionadaIEPM)
+          .pipe(takeUntil(this.destroy$))
+      );
+
+      this.iepmData = this.transformIEPMData(data);
+      this.showIEPM = true;
+
+      console.log('Datos IEPM cargados:', {
+        puntaje: this.iepmData.resultadoTotal.puntaje,
+        dimensiones: this.iepmData.porDimension.length,
+        indicadores: this.iepmData.porIndicador.length
+      });
+
+      setTimeout(() => this.createIEPMChart(), 300);
+
+    } catch (error) {
+      console.error('Error al cargar datos IEPM:', error);
+      this.handleError('Error al cargar datos IEPM');
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
+  private validarYTransformarDatos(): void {
+    if (!this.resultados || this.resultados.length === 0) {
+      console.warn('No hay resultados para validar');
+      return;
+    }
+
+    this.resultados = this.resultados.map((resultado, index) => ({
+      ...resultado,
+      nombre: resultado.nombre || this.competenciasNombres[resultado.idCompetencia - 1] || `Competencia ${resultado.idCompetencia}`,
+      color: resultado.color || this.colors[index % this.colors.length],
+      puntuacionCompetencia: this.validateNumber(resultado.puntuacionCompetencia),
+      valor: resultado.valor || resultado.puntuacionCompetencia,
+      nivel: this.getNivelCompetencia(resultado.puntuacionCompetencia)
+    }));
+
+    console.log('Datos validados y transformados:', this.resultados.length, 'competencias');
+  }
+
+  private transformIEPMData(data: any): IepmTransformado {
+    return {
+      resultadoTotal: {
+        puntaje: data.iepm?.iepm || 0,
+        valoracion: data.iepm?.valoracion || 'N/A',
+        criterio: data.accionMejora?.descripcion || 'N/A'
+      },
+      porDimension: (data.dimensiones || []).map((d: any) => ({
+        idDimension: d.idDimension,
+        dimension: this.getNombreDimension(d.idDimension),
+        puntaje: d.valor,
+        porcentaje: (d.valor / 5) * 100
+      })),
+      porIndicador: (data.indicadores || []).map((i: any) => ({
+        idIndicador: i.idIndicador,
+        indicador: this.getNombreIndicador(i.idIndicador),
+        idDimension: Math.ceil(i.idIndicador / 3),
+        dimension: this.getNombreDimension(Math.ceil(i.idIndicador / 3)),
+        puntaje: i.valor,
+        porcentaje: (i.valor / 5) * 100
+      })),
+      accionRecomendada: {
+        descripcion: data.accionMejora?.descripcion || 'N/A',
+        recomendaciones: data.accionMejora?.recomendaciones || 'N/A',
+        rango: `${data.accionMejora?.rangoMin || 0}-${data.accionMejora?.rangoMax || 0}`
+      }
+    };
+  }
+
+  // MÉTODOS DE CREACIÓN DE GRÁFICOS ACTUALIZADOS
+  createPieChart(): void {
+    console.log('Creando gráfico de competencias');
+    
+    if (!this.pieChart?.nativeElement) {
+      console.error('Canvas no disponible');
+      return;
+    }
+
+    if (!this.resultados || this.resultados.length === 0) {
+      console.warn('No hay datos para el gráfico');
+      // MOSTRAR MENSAJE EN EL GRÁFICO
+      this.mostrarMensajeEnGrafico('No hay datos disponibles para mostrar en el gráfico');
+      return;
+    }
+
+    this.destroyChart();
+
+    const ctx = this.pieChart.nativeElement.getContext('2d');
+    if (!ctx) return;
+
+    const labels = this.resultados.map(r => r.nombre);
+    const valores = this.resultados.map(r => r.puntuacionCompetencia);
+    const colores = this.resultados.map(r => r.color);
+
     this.chart = new Chart(ctx, {
-      type: 'pie',
+      type: this.tipoGrafico as any,
       data: {
-        labels: labels,
+        labels,
         datasets: [{
           label: 'Competencias Emprendedoras',
           data: valores,
           backgroundColor: colores,
           borderColor: '#ffffff',
           borderWidth: 2,
-          hoverBorderWidth: 3,
-          hoverBorderColor: '#333333'
+          hoverBorderWidth: 3
         }]
       },
       options: {
@@ -492,10 +702,7 @@ createPieChart(): void {
           title: {
             display: true,
             text: 'Evaluación de Competencias Emprendedoras (ICE)',
-            font: {
-              size: 16,
-              weight: 'bold'
-            },
+            font: { size: 16, weight: 'bold' },
             padding: 20
           },
           legend: {
@@ -504,9 +711,7 @@ createPieChart(): void {
               usePointStyle: true,
               pointStyle: 'circle',
               padding: 15,
-              font: {
-                size: 12
-              }
+              font: { size: 12 }
             }
           },
           tooltip: {
@@ -514,7 +719,8 @@ createPieChart(): void {
               label: (context: any) => {
                 const label = context.label || '';
                 const value = context.parsed || 0;
-                const percentage = ((value / valores.reduce((a, b) => a + b, 0)) * 100).toFixed(1);
+                const total = valores.reduce((a, b) => a + b, 0);
+                const percentage = ((value / total) * 100).toFixed(1);
                 return `${label}: ${value.toFixed(3)} (${percentage}%)`;
               }
             }
@@ -528,189 +734,355 @@ createPieChart(): void {
       }
     });
 
-    console.log('✅ Gráfico creado exitosamente');
+    console.log('Gráfico de competencias creado');
+  }
+
+  /**
+   * Mostrar mensaje cuando no hay datos para gráfico
+   */
+  private mostrarMensajeEnGrafico(mensaje: string): void {
+    if (!this.pieChart?.nativeElement) return;
     
-  } catch (error) {
-    console.error('❌ Error al crear el gráfico:', error);
-    this.createTestChart(); // Crear gráfico de prueba en caso de error
-  }
-}
+    const ctx = this.pieChart.nativeElement.getContext('2d');
+    if (!ctx) return;
 
-// MÉTODO AUXILIAR: Crear gráfico de prueba cuando no hay datos
-private createTestChart(): void {
-  console.log('🧪 Creando gráfico de prueba...');
-  
-  if (!this.pieChart?.nativeElement) return;
-  
-  const ctx = this.pieChart.nativeElement.getContext('2d');
-  if (!ctx) return;
+    this.destroyChart();
 
-  // Destruir gráfico anterior si existe
-  if (this.chart) {
-    this.chart.destroy();
-    this.chart = null;
-  }
-
-  // Datos de prueba con las 10 competencias
-  const datosTest = [
-    { nombre: 'Comportamiento Emprendedor', valor: 0.85 },
-    { nombre: 'Creatividad', valor: 0.72 },
-    { nombre: 'Liderazgo', valor: 0.68 },
-    { nombre: 'Personalidad Proactiva', valor: 0.91 },
-    { nombre: 'Tolerancia a la incertidumbre', valor: 0.58 },
-    { nombre: 'Trabajo en Equipo', valor: 0.76 },
-    { nombre: 'Pensamiento Estratégico', valor: 0.82 },
-    { nombre: 'Proyección Social', valor: 0.64 },
-    { nombre: 'Orientación Financiera', valor: 0.77 },
-    { nombre: 'Orientación Tecnológica e innovación', valor: 0.69 }
-  ];
-
-  this.chart = new Chart(ctx, {
-    type: 'pie',
-    data: {
-      labels: datosTest.map(item => item.nombre),
-      datasets: [{
-        label: 'Competencias (Datos de Prueba)',
-        data: datosTest.map(item => item.valor),
-        backgroundColor: this.colors.slice(0, 10),
-        borderColor: '#ffffff',
-        borderWidth: 2
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        title: {
-          display: true,
-          text: 'Competencias Emprendedoras (Datos de Prueba)',
-          font: { size: 16, weight: 'bold' },
-          padding: 20
-        },
-        legend: {
-          position: 'bottom',
-          labels: {
-            usePointStyle: true,
-            pointStyle: 'circle',
-            padding: 15,
-            font: { size: 12 }
-          }
-        },
-        tooltip: {
-          callbacks: {
-            label: (context: any) => {
-              const label = context.label || '';
-              const value = context.parsed || 0;
-              return `${label}: ${value.toFixed(3)}`;
-            }
+    // Crear gráfico con mensaje
+    this.chart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Sin datos'],
+        datasets: [{
+          data: [1],
+          backgroundColor: ['#f0f0f0'],
+          borderColor: ['#d0d0d0'],
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          title: {
+            display: true,
+            text: mensaje,
+            font: { size: 14, weight: 'bold' },
+            color: '#666666'
+          },
+          legend: {
+            display: false
+          },
+          tooltip: {
+            enabled: false
           }
         }
       }
-    }
-  });
-
-  console.log('✅ Gráfico de prueba creado');
-}
-
-
-
-
-
-
-
-
-
-
-
-// MÉTODO MEJORADO para obtener porcentaje
-getCompetenciaPercentage(resultado: any): number {
-  if (!this.resultados || this.resultados.length === 0) {
-    return 0;
+    });
   }
-  
-  // Calcular total solo de competencias con valor > 0
-  const resultadosValidos = this.resultados.filter(r => r.puntuacionCompetencia > 0);
-  const total = resultadosValidos.reduce((sum, r) => sum + r.puntuacionCompetencia, 0);
-  const valor = resultado.puntuacionCompetencia;
-  
-  return total > 0 ? (valor / total) * 100 : 0;
-}
 
-  
-
- 
-
-
-  // CORREGIDO: Gráfico IEPM como gráfico de barras
   createIEPMChart(): void {
-    if (!this.iepmChart || !this.iepmData?.porDimension.length) return;
+    if (!this.iepmChart?.nativeElement || !this.iepmData?.porDimension.length) {
+      console.warn('No se puede crear gráfico IEPM');
+      return;
+    }
 
-    // Destruir gráfico anterior si existe
     if (this.iepmChartInstance) {
       this.iepmChartInstance.destroy();
     }
 
     const ctx = this.iepmChart.nativeElement.getContext('2d');
-    
-    const data = {
-      labels: this.iepmData.porDimension.map(d => d.dimension),
-      datasets: [{
-        label: 'Puntuación IEPM',
-        data: this.iepmData.porDimension.map(d => d.puntaje),
-        backgroundColor: [
-          '#FF6E6E',
-          '#6A8CFF',
-          '#7CFFCB'
-        ],
-        borderColor: '#fff',
-        borderWidth: 1
-      }]
-    };
+    if (!ctx) return;
 
-    const options = {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: 'bottom' as const,
-          labels: {
-            usePointStyle: true,
-            pointStyle: 'circle' as const,
-            boxHeight: 12,
-            boxWidth: 12,
-            padding: 15
-          }
-        },
-        tooltip: {
-          callbacks: {
-            label: (context: any) => {
-              const value = context.parsed;
-              return `${context.label}: ${value.toFixed(2)}/5.0`;
+    this.iepmChartInstance = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: this.iepmData.porDimension.map(d => d.dimension),
+        datasets: [{
+          label: 'Puntuación IEPM',
+          data: this.iepmData.porDimension.map(d => d.puntaje),
+          backgroundColor: ['#FF6E6E', '#6A8CFF', '#7CFFCB'],
+          borderColor: '#fff',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              usePointStyle: true,
+              pointStyle: 'circle',
+              boxHeight: 12,
+              boxWidth: 12,
+              padding: 15
             }
           }
-        }
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-          max: 5,
-          ticks: {
-            stepSize: 1
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            max: 5,
+            ticks: { stepSize: 1 }
           }
         }
       }
-    };
+    });
 
-    this.iepmChartInstance = new Chart(ctx, {
-      type: 'bar', // 🔄 CAMBIAR POR: 'line', 'radar', 'polarArea'
-      data,
-      options
+    console.log('Gráfico IEPM creado');
+  }
+
+  private createTestChart(): void {
+    console.log('Creando gráfico de prueba');
+    
+    if (!this.pieChart?.nativeElement) return;
+    
+    const ctx = this.pieChart.nativeElement.getContext('2d');
+    if (!ctx) return;
+
+    this.destroyChart();
+
+    const datosTest = this.competenciasNombres.map((nombre, index) => ({
+      nombre,
+      valor: Math.random() * 0.5 + 0.5,
+      color: this.colors[index % this.colors.length]
+    }));
+
+    this.chart = new Chart(ctx, {
+      type: 'pie',
+      data: {
+        labels: datosTest.map(item => item.nombre),
+        datasets: [{
+          label: 'Competencias (Datos de Prueba)',
+          data: datosTest.map(item => item.valor),
+          backgroundColor: datosTest.map(item => item.color),
+          borderColor: '#ffffff',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          title: {
+            display: true,
+            text: 'Competencias Emprendedoras (Datos de Prueba)',
+            font: { size: 16, weight: 'bold' },
+            padding: 20
+          },
+          legend: {
+            position: 'bottom',
+            labels: {
+              usePointStyle: true,
+              pointStyle: 'circle',
+              padding: 15,
+              font: { size: 12 }
+            }
+          }
+        }
+      }
+    });
+
+    console.log('Gráfico de prueba creado');
+  }
+
+  private destroyChart(): void {
+    if (this.chart) {
+      this.chart.destroy();
+      this.chart = null;
+    }
+  }
+
+  // MÉTODOS DE EVENTOS Y CAMBIOS
+  onEncuestaSeleccionadaChange(event: any): void {
+    console.log('Cambiando encuesta ICE:', event.detail.value);
+    
+    const valor = event.detail.value;
+    this.encuestaSeleccionada = valor ? Number(valor) : null;
+    
+    if (this.encuestaSeleccionada) {
+      this.fetchResultados();
+    }
+  }
+
+  onEncuestaSeleccionadaIEPMChange(event: any): void {
+    console.log('Cambiando encuesta IEPM:', event.detail.value);
+    
+    const valor = event.detail.value;
+    this.encuestaSeleccionadaIEPM = valor ? Number(valor) : null;
+    
+    if (this.encuestaSeleccionadaIEPM) {
+      this.fetchIEPMData();
+    }
+  }
+
+  cambiarTipoGrafico(tipo: string): void {
+    console.log('Cambiando tipo de gráfico a:', tipo);
+    
+    this.tipoGrafico = tipo;
+    this.createPieChart();
+  }
+
+  toggleComentarios(): void {
+    this.showSideComments = !this.showSideComments;
+  }
+
+  async imprimir(): Promise<void> {
+    try {
+      window.print();
+    } catch (error) {
+      console.error('Error al imprimir:', error);
+      await this.showToast('Error al imprimir', 'danger');
+    }
+  }
+
+  recrearGrafico(): void {
+    console.log('Recreando gráfico manualmente');
+    this.createPieChart();
+  }
+
+  // MÉTODOS DE CÁLCULO Y OBTENCIÓN DE DATOS
+  getValorCompetencia(idCompetencia: number): string {
+    const resultado = this.resultados.find(r => r.idCompetencia === idCompetencia);
+    return resultado ? resultado.puntuacionCompetencia.toFixed(2) : 'N/A';
+  }
+
+  getCompetenciaPercentage(resultado: Resultado): number {
+    if (!this.resultados || this.resultados.length === 0) return 0;
+    
+    const resultadosValidos = this.resultados.filter(r => r.puntuacionCompetencia > 0);
+    const total = resultadosValidos.reduce((sum, r) => sum + r.puntuacionCompetencia, 0);
+    
+    return total > 0 ? (resultado.puntuacionCompetencia / total) * 100 : 0;
+  }
+
+  calcularIceGeneral(): number {
+    return this.resumen?.valorIceTotal || 0;
+  }
+
+  getNivelIceGeneral(): { nivel: string; valoracion: string; acciones: string } {
+    const iceGeneral = this.calcularIceGeneral();
+
+    if (iceGeneral >= 0 && iceGeneral < 0.6) {
+      return {
+        nivel: 'Bajo',
+        valoracion: 'Baja competencia emprendedora',
+        acciones: 'Falta desarrollar las competencias'
+      };
+    } else if (iceGeneral >= 0.6 && iceGeneral < 0.8) {
+      return {
+        nivel: 'Medio',
+        valoracion: 'Mediana competencia',
+        acciones: 'Se cumple con las competencias básicas'
+      };
+    } else if (iceGeneral >= 0.8 && iceGeneral <= 1.0) {
+      return {
+        nivel: 'Alto',
+        valoracion: 'Alta competencia',
+        acciones: 'Excelente desempeño en competencias'
+      };
+    }
+
+    return {
+      nivel: 'N/A',
+      valoracion: 'N/A',
+      acciones: 'N/A'
+    };
+  }
+
+  getNivelPuntaje(puntaje: number): { nivel: string; color: string } {
+    if (puntaje >= 0 && puntaje < 2) {
+      return { nivel: 'Bajo', color: '#FF6E6E' };
+    } else if (puntaje >= 2 && puntaje < 4) {
+      return { nivel: 'Medio', color: '#FFE066' };
+    } else if (puntaje >= 4 && puntaje <= 5) {
+      return { nivel: 'Alto', color: '#7CFFCB' };
+    }
+
+    return { nivel: 'N/A', color: '#999999' };
+  }
+
+  private getNivelCompetencia(puntuacion: number): string {
+    if (puntuacion >= 0 && puntuacion < 0.6) return 'Bajo';
+    if (puntuacion >= 0.6 && puntuacion < 0.8) return 'Medio';
+    if (puntuacion >= 0.8 && puntuacion <= 1.0) return 'Alto';
+    return 'N/A';
+  }
+
+  getNombreIndicador(idIndicador: number): string {
+    const indicador = this.indicadoresInfo.find(i => i.idIndicador === idIndicador);
+    return indicador?.nombre || `Indicador ${idIndicador}`;
+  }
+
+  getNombreDimension(idDimension: number): string {
+    const dimension = this.dimensionesInfo.find(d => d.idDimension === idDimension);
+    return dimension?.nombre || `Dimensión ${idDimension}`;
+  }
+
+  getIndicadoresPorDimension(idDimension: number): any[] {
+    if (!this.iepmData?.porIndicador) return [];
+    
+    return this.iepmData.porIndicador.filter(ind => {
+      const dimensionCalculada = Math.ceil(ind.idIndicador / 3);
+      return dimensionCalculada === idDimension;
     });
   }
 
-  loadSavedComments() {
-    // Cambiar localStorage por almacenamiento en memoria
-    const saved = this.comentarios; // Usar variable en memoria
+  getColorDimension(idDimension: number): string {
+    const colores = ['#FF6E6E', '#6A8CFF', '#7CFFCB'];
+    return colores[idDimension - 1] || '#999999';
+  }
+
+  getResultadosFiltrados(): Resultado[] {
+    return this.resultados?.filter(resultado => resultado.puntuacionCompetencia > 0) || [];
+  }
+
+  // MÉTODOS DE FORMATEO DE FECHAS
+  formatearFecha(fecha: string): string {
+    if (!fecha) return 'N/A';
+    try {
+      return new Date(fecha).toLocaleDateString();
+    } catch {
+      return 'N/A';
+    }
+  }
+
+  formatearFechaHora(fecha: string): string {
+    if (!fecha) return 'N/A';
+    try {
+      return new Date(fecha).toLocaleString();
+    } catch {
+      return 'N/A';
+    }
+  }
+
+  getCurrentDate(): string {
+    return new Date().toLocaleDateString();
+  }
+
+  getCurrentTime(): string {
+    return new Date().toLocaleTimeString();
+  }
+
+  getEncuestaFecha(): string {
+    if (!this.encuestas?.length) return 'N/A';
+    const encuesta = this.encuestas.find(e => e.idEncuesta === this.encuestaSeleccionada);
+    return encuesta ? this.formatearFecha(encuesta.fechaEvaluacion) : 'N/A';
+  }
+
+  getFechaEvaluacion(encuesta: Encuesta): string {
+    return encuesta?.fechaEvaluacion ? this.formatearFecha(encuesta.fechaEvaluacion) : 'N/A';
+  }
+
+  getFechaAplicacion(encuesta: Encuesta): string {
+    return encuesta?.fechaAplicacion ? this.formatearFecha(encuesta.fechaAplicacion) : 'N/A';
+  }
+
+  // MÉTODOS DE COMPATIBILIDAD Y CARGA
+  private loadSavedComments(): void {
+    const saved = this.comentarios;
     if (saved) {
       this.comentariosSeleccionados = saved
         .split('\n')
@@ -719,693 +1091,82 @@ getCompetenciaPercentage(resultado: any): number {
     }
   }
 
-  async fetchIndicadoresDimensiones() {
-    try {
-      const data = await firstValueFrom(this.resultadosService.getIndicadoresDimensiones());
-      console.log('Indicadores y dimensiones:', data);
-      
-      // Actualizar los datos si vienen del servidor
-      if (data && Array.isArray(data)) {
-        // Procesar los datos del servidor si es necesario
-        // this.indicadoresInfo = data.indicadores;
-        // this.dimensionesInfo = data.dimensiones;
-      }
-    } catch (error) {
-      console.error('Error al cargar indicadores y dimensiones:', error);
-    }
+  private validateNumber(value: any): number {
+    const num = Number(value);
+    return isNaN(num) ? 0 : num;
   }
 
-  async fetchEncuestas() {
-    try {
-      const data = await firstValueFrom(this.resultadosService.getEncuestas(Number(this.idEmprendedor)));
-      this.encuestas = data;
-      if (data.length > 0) {
-        this.encuestaSeleccionada = data[0].idEncuesta;
-        await this.fetchResultados();
-      }
-    } catch (error) {
-      console.error('Error al cargar encuestas ICE:', error);
-      this.error = 'Error al cargar encuestas ICE';
-    }
-  }
-
-  async fetchEncuestasIEPM() {
-    try {
-      const data = await firstValueFrom(this.resultadosService.getEncuestasIEPM(Number(this.idEmprendedor)));
-      this.encuestasIEPM = data;
-      if (data.length > 0) {
-        this.encuestaSeleccionadaIEPM = data[0].idEncuesta;
-        await this.fetchIEPMData();
-      }
-    } catch (error) {
-      console.error('Error al cargar encuestas IEPM:', error);
-      this.error = 'Error al cargar encuestas IEPM';
-    }
-  }
-
- // ✅ MÉTODO MEJORADO: Actualizar el fetchResultados para debug
-// REEMPLAZA el método fetchResultados() existente:
-
-async fetchResultados() {
-  if (!this.encuestaSeleccionada) {
-    console.warn('⚠️ No hay encuesta seleccionada');
-    return;
-  }
-
-  try {
-    console.log('🔄 Cargando resultados para encuesta:', this.encuestaSeleccionada);
-    this.isLoading = true;
-    this.error = null;
-
-    // 1. Cargar datos del emprendedor
-    const emprendedor = await firstValueFrom(
-      this.resultadosService.getEmprendedor(Number(this.idEmprendedor))
-    );
-    this.emprendedor = emprendedor;
-    console.log('✅ Emprendedor cargado:', emprendedor?.nombre);
-
-    // 2. Cargar resultados
-    const resultadosData = await firstValueFrom(
-      this.resultadosService.getResultadosResumen(
-        Number(this.idEmprendedor), 
-        this.encuestaSeleccionada
-      )
-    );
-
-    console.log('📊 Datos recibidos del servicio:', resultadosData);
-
-    // 3. Procesar datos
-    this.resultados = resultadosData.resultados || [];
-    this.resumen = resultadosData.resumen || null;
-
-    console.log('✅ Resultados procesados:', {
-      totalResultados: this.resultados.length,
-      resumen: this.resumen
-    });
-
-    // 4. Validar y transformar datos si es necesario
-    this.validarYTransformarDatos();
-
+  // MÉTODOS DE MANEJO DE ERRORES Y NOTIFICACIONES
+  private async handleError(message: string): Promise<void> {
+    console.error(message);
+    this.error = message;
     this.isLoading = false;
-
-    // 5. Crear gráfico después de cargar datos
-    setTimeout(() => {
-      console.log('🎨 Creando gráfico con datos reales...');
-      this.createPieChart();
-    }, 500);
-
-  } catch (error) {
-    console.error('❌ Error al cargar datos ICE:', error);
-    this.error = 'Error al cargar datos ICE';
-    this.isLoading = false;
-    
-    // Crear gráfico de prueba en caso de error
-    setTimeout(() => {
-      this.createPieChart();
-    }, 500);
-  }
-}
-
-
-
-
-
-
-// NUEVO MÉTODO: Validar y transformar datos
-private validarYTransformarDatos(): void {
-  console.log('🔍 Validando datos...');
-  
-  if (!this.resultados || this.resultados.length === 0) {
-    console.warn('⚠️ No hay resultados para validar');
-    return;
+    await this.showToast(message, 'danger');
   }
 
-  // Asegurarse de que cada resultado tenga las propiedades necesarias
-  this.resultados = this.resultados.map((resultado, index) => {
-    // Si no tiene nombre, asignarlo desde el array de nombres
-    if (!resultado.nombre) {
-      resultado.nombre = this.competenciasNombres[resultado.idCompetencia - 1] || 
-                        `Competencia ${resultado.idCompetencia}`;
-    }
-    
-    // Si no tiene color, asignarlo desde el array de colores
-    if (!resultado.color) {
-      resultado.color = this.colors[index % this.colors.length];
-    }
-    
-    // Asegurar que tiene un valor numérico válido
-    if (typeof resultado.puntuacionCompetencia !== 'number' || 
-        isNaN(resultado.puntuacionCompetencia)) {
-      resultado.puntuacionCompetencia = 0;
-    }
-    
-    // Agregar valor alternativo si no existe
-    if (!resultado.valor) {
-      resultado.valor = resultado.puntuacionCompetencia;
-    }
-    
-    return resultado;
-  });
-
-  console.log('✅ Datos validados y transformados:', this.resultados.length, 'competencias');
-  
-  // Log de cada competencia para debug
-  this.resultados.forEach((resultado, index) => {
-    console.log(`Competencia ${index + 1}:`, {
-      id: resultado.idCompetencia,
-      nombre: resultado.nombre,
-      puntuacion: resultado.puntuacionCompetencia,
-      color: resultado.color
+  private async showToast(message: string, color: 'success' | 'warning' | 'danger' = 'success'): Promise<void> {
+    const toast = await this.toastController.create({
+      message,
+      duration: 3000,
+      color,
+      position: 'top',
+      buttons: [{
+        text: 'Cerrar',
+        role: 'cancel'
+      }]
     });
-  });
-}
+    await toast.present();
+  }
 
+  private async showAlert(header: string, message: string): Promise<void> {
+    const alert = await this.alertController.create({
+      header,
+      message,
+      buttons: ['OK']
+    });
+    await alert.present();
+  }
 
+  // MÉTODOS DE DIAGNÓSTICO Y VERIFICACIÓN
+  diagnosticarEstado(): void {
+    console.log('DIAGNÓSTICO DEL COMPONENTE:');
+    console.log('Canvas disponible:', !!this.pieChart?.nativeElement);
+    console.log('Resultados cargados:', this.resultados?.length || 0);
+    console.log('Encuesta seleccionada:', this.encuestaSeleccionada);
+    console.log('Gráfico existente:', !!this.chart);
+    console.log('Loading:', this.isLoading);
+    console.log('Error:', this.error);
+    console.log('Comentarios cargados:', this.comentariosAsesor?.length || 0);
+    
+    if (this.resultados?.length) {
+      console.log('Primeros 3 resultados:', this.resultados.slice(0, 3));
+    }
+  }
 
-
-
-
-  // CORREGIDO: Método fetchIEPMData con transformación mejorada
-  async fetchIEPMData() {
-    if (!this.encuestaSeleccionadaIEPM) return;
-
+  verificarDatos(): void {
     try {
-      this.isLoading = true;
-      this.error = null;
-
-      const data = await firstValueFrom(this.resultadosService.getResultadosIEPM(Number(this.idEmprendedor), this.encuestaSeleccionadaIEPM));
-
-      const transformedData: IepmTransformado = {
-        resultadoTotal: {
-          puntaje: data.iepm?.iepm || 0,
-          valoracion: data.iepm?.valoracion || 'N/A',
-          criterio: data.accionMejora?.descripcion || 'N/A'
-        },
-        porDimension: data.dimensiones?.map((d: any) => ({
-          idDimension: d.idDimension,
-          dimension: this.getNombreDimension(d.idDimension),
-          puntaje: d.valor,
-          porcentaje: (d.valor / 5) * 100
-        })) || [],
-        porIndicador: data.indicadores?.map((i: any) => ({
-          idIndicador: i.idIndicador,
-          indicador: this.getNombreIndicador(i.idIndicador),
-          idDimension: Math.ceil(i.idIndicador / 3), // Asociar indicador a dimensión
-          dimension: this.getNombreDimension(Math.ceil(i.idIndicador / 3)),
-          puntaje: i.valor,
-          porcentaje: (i.valor / 5) * 100
-        })) || [],
-        accionRecomendada: {
-          descripcion: data.accionMejora?.descripcion || 'N/A',
-          recomendaciones: data.accionMejora?.recomendaciones || 'N/A',
-          rango: `${data.accionMejora?.rangoMin || 0}-${data.accionMejora?.rangoMax || 0}`
-        }
-      };
-
-      this.iepmData = transformedData;
-      this.showIEPM = true;
-      this.isLoading = false;
+      if (!this.resultados?.length) {
+        this.showAlert('Sin datos', 'No hay datos disponibles para mostrar');
+        return;
+      }
       
-      // Crear el gráfico IEPM después de cargar los datos
-      setTimeout(() => {
-        this.createIEPMChart();
-      }, 100);
-
+      const datosValidos = this.resultados.every(item => 
+        item && typeof item === 'object' && typeof item.puntuacionCompetencia === 'number'
+      );
+      
+      if (datosValidos) {
+        this.showAlert('Verificación exitosa', 'Datos verificados correctamente');
+      } else {
+        this.showAlert('Error de datos', 'Algunos datos no son válidos');
+      }
+      
     } catch (error) {
-      console.error('Error al cargar resultados IEPM:', error);
-      this.isLoading = false;
+      console.error('Error al verificar datos:', error);
+      this.showAlert('Error', 'Error al verificar datos');
     }
   }
-  // Métodos públicos
-getValorCompetencia(idCompetencia: number): string {
-  const resultado = this.resultados.find(r => r.idCompetencia === idCompetencia);
-  return resultado ? resultado.puntuacionCompetencia.toFixed(2) : 'N/A';
-}
 
-calcularIceGeneral(): number {
-  return this.resumen ? this.resumen.valorIceTotal : 0;
-}
-
-getNivelIceGeneral() {
-  const iceGeneral = this.calcularIceGeneral();
-
-  if (iceGeneral >= 0 && iceGeneral < 0.6) {
-    return {
-      nivel: 'Bajo',
-      valoracion: 'Baja competencia emprendedora',
-      acciones: 'Falta desarrollar las competencias'
-    };
-  } else if (iceGeneral >= 0.6 && iceGeneral < 0.8) {
-    return {
-      nivel: 'Medio',
-      valoracion: 'Mediana competencia',
-      acciones: 'Se cumple con las competencias básicas'
-    };
-  } else if (iceGeneral >= 0.8 && iceGeneral <= 1.0001) {
-    return {
-      nivel: 'Alto',
-      valoracion: 'Alta competencia',
-      acciones: 'Excelente desempeño en competencias'
-    };
-  } else {
-    return {
-      nivel: 'N/A',
-      valoracion: 'N/A',
-      acciones: 'N/A'
-    };
+  forzarRedibujado(): void {
+    this.cdr.detectChanges();
   }
-}
-
-// CORREGIDO: Método getNombreIndicador mejorado
-getNombreIndicador(idIndicador: number): string {
-  const indicador = this.indicadoresInfo.find(i => i.idIndicador === idIndicador);
-  return indicador ? indicador.nombre : `Indicador ${idIndicador}`;
-}
-
-// CORREGIDO: Método getNombreDimension mejorado
-getNombreDimension(idDimension: number): string {
-  const dimension = this.dimensionesInfo.find(d => d.idDimension === idDimension);
-  return dimension ? dimension.nombre : `Dimensión ${idDimension}`;
-}
-
-
-
-
-
-// NUEVOS MÉTODOS para obtener indicadores por dimensión
-getIndicadoresPorDimension(idDimension: number): any[] {
-  if (!this.iepmData?.porIndicador) return [];
-  
-  return this.iepmData.porIndicador.filter(ind => {
-    // Asociar indicadores a dimensiones: 1-3 = Económica, 4-6 = Operacional, 7-9 = Innovación
-    const dimensionCalculada = Math.ceil(ind.idIndicador / 3);
-    return dimensionCalculada === idDimension;
-  });
-}
-
-// NUEVO: Método para obtener el color de la dimensión
-getColorDimension(idDimension: number): string {
-  const colores = ['#FF6E6E', '#6A8CFF', '#7CFFCB'];
-  return colores[idDimension - 1] || '#999999';
-}
-
-
-
-
-getResultadosFiltrados(): Resultado[] {
-  if (!this.resultados || this.resultados.length === 0) {
-    return [];
-  }
-  
-  // Si no hay filtros específicos, devolver todos los resultados
-  // Puedes agregar lógica de filtrado aquí según tus necesidades
-  
-  // Ejemplo: Filtrar solo resultados con puntuación > 0
-  return this.resultados.filter(resultado => 
-    resultado.puntuacionCompetencia > 0
-  );
-}
-
-
-
-/**
- * Método auxiliar para obtener el nivel de una competencia
- */
-private getNivelCompetencia(puntuacion: number): string {
-  if (puntuacion >= 0 && puntuacion < 0.6) {
-    return 'Bajo';
-  } else if (puntuacion >= 0.6 && puntuacion < 0.8) {
-    return 'Medio';
-  } else if (puntuacion >= 0.8 && puntuacion <= 1.0) {
-    return 'Alto';
-  } else {
-    return 'N/A';
-  }
-}
-
-
-
-
-
-
-
-
-
-// NUEVO: Método para obtener el nivel de un puntaje
-getNivelPuntaje(puntaje: number): { nivel: string; color: string } {
-  if (puntaje >= 0 && puntaje < 2) {
-    return { nivel: 'Bajo', color: '#FF6E6E' };
-  } else if (puntaje >= 2 && puntaje < 4) {
-    return { nivel: 'Medio', color: '#FFE066' };
-  } else if (puntaje >= 4 && puntaje <= 5) {
-    return { nivel: 'Alto', color: '#7CFFCB' };
-  } else {
-    return { nivel: 'N/A', color: '#999999' };
-  }
-}
-
-// Métodos para formatear fechas - CORREGIDOS
-formatearFecha(fecha: string): string {
-  if (!fecha) return 'N/A';
-  try {
-    return new Date(fecha).toLocaleDateString();
-  } catch (error) {
-    return 'N/A';
-  }
-}
-
-formatearFechaHora(fecha: string): string {
-  if (!fecha) return 'N/A';
-  try {
-    return new Date(fecha).toLocaleString();
-  } catch (error) {
-    return 'N/A';
-  }
-}
-
-getCurrentDate(): string {
-  return new Date().toLocaleDateString();
-}
-
-getCurrentTime(): string {
-  return new Date().toLocaleTimeString();
-}
-
-getEncuestaFecha(): string {
-  if (!this.encuestas || this.encuestas.length === 0) return 'N/A';
-  const encuesta = this.encuestas.find(e => e.idEncuesta === this.encuestaSeleccionada);
-  return encuesta ? this.formatearFecha(encuesta.fechaEvaluacion) : 'N/A';
-}
-//IMPIRMIR
-
-
-imprimir() {
-  // Opción 1: Imprimir usando window.print()
-  window.print();
-}
-
-
-
-forzarRedibujado() {
-  // Opción 1: Forzar detección de cambios
-  this.cdr.detectChanges();
-}
-
-// Métodos específicos para fecha de evaluación y aplicación
-getFechaEvaluacion(encuesta: Encuesta): string {
-  return encuesta?.fechaEvaluacion ? this.formatearFecha(encuesta.fechaEvaluacion) : 'N/A';
-}
-
-getFechaAplicacion(encuesta: Encuesta): string {
-  return encuesta?.fechaAplicacion ? this.formatearFecha(encuesta.fechaAplicacion) : 'N/A';
-
-
-}
-
- toggleComentarios() {
-    this.showSideComments = !this.showSideComments;
-  }
-
-  // MÉTODO CORREGIDO: onEncuestaSeleccionadaChange() 
-onEncuestaSeleccionadaChange(event: any) {
-  console.log('🔄 Cambiando encuesta ICE:', event.detail.value);
-  
-  try {
-    const valor = event.detail.value;
-    this.encuestaSeleccionada = valor ? Number(valor) : null;
-    
-    if (this.encuestaSeleccionada) {
-      console.log('✅ Nueva encuesta seleccionada:', this.encuestaSeleccionada);
-      this.fetchResultados();
-    } else {
-      console.warn('⚠️ Encuesta seleccionada es null');
-    }
-    
-  } catch (error) {
-    console.error('❌ Error al cambiar encuesta ICE:', error);
-  }
-}
-
-
-
-
-
-
-
-// MÉTODO PÚBLICO: Forzar recreación del gráfico (botón de emergencia)
-recrearGrafico(): void {
-  console.log('🔄 Recreando gráfico manualmente...');
-  
-  // Destruir gráfico actual
-  if (this.chart) {
-    this.chart.destroy();
-    this.chart = null;
-  }
-  
-  // Esperar un momento y recrear
-  setTimeout(() => {
-    this.createPieChart();
-    console.log('✅ Gráfico recreado');
-  }, 200);
-}
-
-// MÉTODO PÚBLICO: Crear gráfico con todas las competencias (datos completos)
-crearGraficoCompleto(): void {
-  console.log('🎨 Creando gráfico con todas las competencias...');
-  
-  if (!this.pieChart?.nativeElement) {
-    console.error('❌ Canvas no disponible');
-    return;
-  }
-
-  // Destruir gráfico anterior
-  if (this.chart) {
-    this.chart.destroy();
-    this.chart = null;
-  }
-
-  const ctx = this.pieChart.nativeElement.getContext('2d');
-  if (!ctx) return;
-
-  // Crear datos completos para las 10 competencias
-  const datosCompletos = this.competenciasNombres.map((nombre, index) => {
-    // Buscar datos reales si existen
-    const resultadoReal = this.resultados?.find(r => r.idCompetencia === (index + 1));
-    const valor = resultadoReal?.puntuacionCompetencia || Math.random() * 0.5 + 0.5; // Valor aleatorio si no existe
-    
-    return {
-      nombre: nombre,
-      valor: valor,
-      color: this.colors[index % this.colors.length]
-    };
-  });
-
-  // Crear gráfico
-  this.chart = new Chart(ctx, {
-    type: 'pie',
-    data: {
-      labels: datosCompletos.map(item => item.nombre),
-      datasets: [{
-        label: 'Competencias Emprendedoras',
-        data: datosCompletos.map(item => item.valor),
-        backgroundColor: datosCompletos.map(item => item.color),
-        borderColor: '#ffffff',
-        borderWidth: 2,
-        hoverBorderWidth: 3
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        title: {
-          display: true,
-          text: 'Evaluación Completa de Competencias Emprendedoras (ICE)',
-          font: { size: 16, weight: 'bold' },
-          padding: 20
-        },
-        legend: {
-          position: 'bottom',
-          labels: {
-            usePointStyle: true,
-            pointStyle: 'circle',
-            padding: 12,
-            font: { size: 11 }
-          }
-        },
-        tooltip: {
-          callbacks: {
-            label: (context: any) => {
-              const label = context.label || '';
-              const value = context.parsed || 0;
-              const total = datosCompletos.reduce((sum, item) => sum + item.valor, 0);
-              const percentage = ((value / total) * 100).toFixed(1);
-              return `${label}: ${value.toFixed(3)} (${percentage}%)`;
-            }
-          }
-        }
-      },
-      animation: {
-        animateRotate: true,
-        animateScale: true,
-        duration: 1500
-      }
-    }
-  });
-
-  console.log('✅ Gráfico completo creado con 10 competencias');
-}
-
-// MÉTODO PÚBLICO: Cambiar tipo de gráfico
-cambiarTipoGraficoVisual(tipo: 'pie' | 'doughnut' | 'bar' | 'radar'): void {
-  console.log('🔄 Cambiando tipo de gráfico a:', tipo);
-  
-  if (!this.resultados || this.resultados.length === 0) {
-    console.warn('⚠️ No hay datos para cambiar tipo de gráfico');
-    return;
-  }
-
-  if (this.chart) {
-    this.chart.destroy();
-    this.chart = null;
-  }
-
-  const ctx = this.pieChart.nativeElement.getContext('2d');
-  if (!ctx) return;
-
-  // Preparar datos
-  const labels = this.resultados.map((resultado, index) => 
-    this.competenciasNombres[resultado.idCompetencia - 1] || `Competencia ${resultado.idCompetencia}`
-  );
-  const valores = this.resultados.map(resultado => resultado.puntuacionCompetencia);
-  const colores = this.resultados.map((_, index) => this.colors[index % this.colors.length]);
-
-  // Configuración específica por tipo
-  let config: any = {
-    type: tipo,
-    data: {
-      labels: labels,
-      datasets: [{
-        label: 'Competencias Emprendedoras',
-        data: valores,
-        backgroundColor: colores,
-        borderColor: '#ffffff',
-        borderWidth: 2
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        title: {
-          display: true,
-          text: `Competencias Emprendedoras (${tipo.toUpperCase()})`,
-          font: { size: 16, weight: 'bold' }
-        },
-        legend: {
-          position: tipo === 'bar' ? 'top' : 'bottom'
-        }
-      }
-    }
-  };
-
-  // Configuración específica para gráfico de barras
-  if (tipo === 'bar') {
-    config.options.scales = {
-      y: {
-        beginAtZero: true,
-        max: 1,
-        ticks: {
-          stepSize: 0.2
-        }
-      }
-    };
-  }
-
-  // Configuración específica para gráfico radar
-  if (tipo === 'radar') {
-    config.options.scales = {
-      r: {
-        beginAtZero: true,
-        max: 1,
-        ticks: {
-          stepSize: 0.2
-        }
-      }
-    };
-    config.data.datasets[0].pointBackgroundColor = colores;
-    config.data.datasets[0].pointBorderColor = '#ffffff';
-    config.data.datasets[0].pointBorderWidth = 2;
-  }
-
-  this.chart = new Chart(ctx, config);
-  console.log('✅ Gráfico cambiado a tipo:', tipo);
-}
-
-// MÉTODO DE DIAGNÓSTICO: Para verificar el estado del componente
-diagnosticarEstado(): void {
-  console.log('🔍 DIAGNÓSTICO DEL COMPONENTE:');
-  console.log('Canvas disponible:', !!this.pieChart?.nativeElement);
-  console.log('Resultados cargados:', this.resultados?.length || 0);
-  console.log('Encuesta seleccionada:', this.encuestaSeleccionada);
-  console.log('Gráfico existente:', !!this.chart);
-  console.log('Loading:', this.isLoading);
-  console.log('Error:', this.error);
-  
-  if (this.resultados && this.resultados.length > 0) {
-    console.log('Primeros 3 resultados:', this.resultados.slice(0, 3));
-  }
-  
-  console.log('Canvas element:', this.pieChart?.nativeElement);
-}
-
-
-
-
-
-
-
-// ✅ MÉTODO DE PRUEBA: Para verificar manualmente
-testearGrafico(): void {
-  console.log('🧪 Probando gráfico con datos de prueba...');
-  
-  // Datos de prueba
-  const datosTest = [
-    { idCompetencia: 1, puntuacionCompetencia: 0.85 },
-    { idCompetencia: 2, puntuacionCompetencia: 0.72 },
-    { idCompetencia: 3, puntuacionCompetencia: 0.64 },
-    { idCompetencia: 4, puntuacionCompetencia: 0.91 },
-    { idCompetencia: 5, puntuacionCompetencia: 0.58 }
-  ];
-  
-  // Mapear a tipo Resultado
-  const resultadosTest = datosTest.map(item => ({
-    ...item,
-    nombre: `Competencia ${item.idCompetencia}`,
-    color: this.generarColorCompetencia(item.idCompetencia),
-    valor: item.puntuacionCompetencia
-  }));
-  
-  const resultadosOriginales = this.resultados;
-  this.resultados = resultadosTest;
-  
-  this.createPieChart();
-  
-  // Restaurar datos originales después de 5 segundos
-  setTimeout(() => {
-    this.resultados = resultadosOriginales;
-    this.createPieChart();
-  }, 5000);
-}
-
-// Función auxiliar para generar colores consistentes
-private generarColorCompetencia(id: number): string {
-  const colores = [
-    '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
-    '#FF9F40', '#8AC24A', '#607D8B', '#E91E63', '#00BCD4'
-  ];
-  return colores[id % colores.length];
-}
-
-
 }

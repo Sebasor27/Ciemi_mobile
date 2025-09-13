@@ -49,18 +49,11 @@ import {
     IonButton,
     IonCard,
     IonCardContent,
-    IonCardHeader,
-    IonCardTitle,
+    
     IonIcon,
     IonModal,
-    IonButtons,
-    IonItem,
-    IonLabel,
-    IonText,
-    IonGrid,
-    IonRow,
-    IonCol,
-    IonBadge,
+   
+    
     IonAvatar,
     IonIcon
   ]

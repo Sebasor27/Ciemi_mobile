@@ -1,478 +1,386 @@
-<ion-header>
-  <ion-toolbar>
-    <ion-title>Resultados Finales</ion-title>
-    <ion-button slot="end" fill="clear" (click)="imprimir()">
-      <ion-icon name="print-outline"></ion-icon>
-    </ion-button>
-    <ion-button slot="end" fill="clear" (click)="toggleComentarios()">
-      <ion-icon name="chatbubble-outline"></ion-icon>
-    </ion-button>
+<ion-header [translucent]="true">
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start">
+      <!-- ERROR CORREGIDO: router debe ser público en el componente -->
+      <ion-button (click)="navigateToHome()" fill="clear">
+        <ion-icon name="arrow-back" slot="icon-only"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>Resultados de Evaluación</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="imprimir()" fill="clear">
+        <ion-icon name="print" slot="icon-only"></ion-icon>
+      </ion-button>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
-<ion-content class="results-content">
-  <!-- Loading -->
+<ion-content [fullscreen]="true" class="ion-padding">
+  
+  <!-- Loading State -->
   <div *ngIf="isLoading" class="loading-container">
-    <ion-spinner name="crescent"></ion-spinner>
-    <p>Cargando datos...</p>
+    <ion-spinner name="circular" color="primary"></ion-spinner>
+    <ion-text>
+      <p>Cargando resultados...</p>
+    </ion-text>
   </div>
 
-  <!-- Error -->
-  <div *ngIf="error && !isLoading" class="error-container">
-    <ion-card>
+  <!-- Error State -->
+  <ion-card *ngIf="error && !isLoading" color="danger">
+    <ion-card-header>
+      <ion-card-title>Error</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <ion-text>{{ error }}</ion-text>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Main Content -->
+  <div *ngIf="!isLoading && !error" class="results-container">
+    
+    <!-- Información del Emprendedor -->
+    <ion-card class="emprendedor-card">
       <ion-card-header>
-        <ion-card-title>Error</ion-card-title>
+        <ion-card-title>Información del Emprendedor</ion-card-title>
       </ion-card-header>
       <ion-card-content>
-        <p>{{ error }}</p>
-        <ion-button expand="block" (click)="router.navigateByUrl('/')">
-          Regresar
-        </ion-button>
+        <ion-item lines="none">
+          <ion-icon name="person" slot="start" color="primary"></ion-icon>
+          <ion-label>
+            <h2>{{ emprendedor?.nombre || 'No disponible' }}</h2>
+            <p>ID: {{ idEmprendedor }}</p>
+          </ion-label>
+        </ion-item>
+        <ion-item lines="none">
+          <ion-icon name="calendar" slot="start" color="primary"></ion-icon>
+          <ion-label>
+            <h3>Fecha de Evaluación</h3>
+            <p>{{ getEncuestaFecha() }}</p>
+          </ion-label>
+        </ion-item>
       </ion-card-content>
     </ion-card>
-  </div>
 
-  <!-- Sin encuestas -->
-  <div *ngIf="!isLoading && !error && encuestas.length === 0 && encuestasIEPM.length === 0" class="no-encuestas">
-    <ion-card>
+    <!-- Selector de Encuestas ICE -->
+    <ion-card class="selector-card">
       <ion-card-header>
-        <ion-card-title>No hay encuestas disponibles</ion-card-title>
+        <ion-card-title>
+          <ion-icon name="document-text" color="primary"></ion-icon>
+          Evaluación ICE (Índice de Competencias Emprendedoras)
+        </ion-card-title>
       </ion-card-header>
       <ion-card-content>
-        <p>Este emprendedor no tiene encuestas registradas.</p>
-      </ion-card-content>
-    </ion-card>
-  </div>
-
-  <!-- Contenido principal -->
-  <div *ngIf="!isLoading && !error && (encuestas.length > 0 || encuestasIEPM.length > 0)" class="results-container">
-    <!-- Selectores de encuesta -->
-    <div class="encuesta-selectors">
-      <div class="selector-item" *ngIf="encuestas.length > 0">
         <ion-item>
-          <ion-label>Seleccione la encuesta de ICE:</ion-label>
-          <ion-select [(ngModel)]="encuestaSeleccionada" (ionChange)="onEncuestaSeleccionadaChange($event)" interface="popover">
+          <ion-select
+            [(ngModel)]="encuestaSeleccionada"
+            (ionChange)="onEncuestaSeleccionadaChange($event)"
+            placeholder="Seleccionar encuesta ICE"
+            interface="popover">
             <ion-select-option *ngFor="let encuesta of encuestas" [value]="encuesta.idEncuesta">
-              {{ formatearFechaHora(encuesta.fechaEvaluacion) }}
+              Encuesta {{ encuesta.idEncuesta }} - {{ getFechaEvaluacion(encuesta) }}
             </ion-select-option>
           </ion-select>
         </ion-item>
-      </div>
-      <div class="selector-item" *ngIf="encuestasIEPM.length > 0">
-        <ion-item>
-          <ion-label>Seleccione la encuesta de IEPM:</ion-label>
-          <ion-select [(ngModel)]="encuestaSeleccionadaIEPM" (ionChange)="onEncuestaSeleccionadaIEPMChange($event)" interface="popover">
-            <ion-select-option *ngFor="let encuesta of encuestasIEPM" [value]="encuesta.idEncuesta">
-              {{ formatearFecha(encuesta.fechaAplicacion) }}
-            </ion-select-option>
-          </ion-select>
-        </ion-item>
-      </div>
-    </div>
+      </ion-card-content>
+    </ion-card>
 
-    <!-- Contenido para imprimir -->
-    <div #printContent>
-      <!-- Datos del emprendedor -->
-      <h2>RESULTADOS FINALES</h2>
-      <div class="results-info">
-        <p><strong>Emprendedor:</strong> <span class="data-box">{{ emprendedor?.nombre || 'N/A' }}</span></p>
-        <p><strong>Fecha de generación:</strong> <span class="data-box">{{ getCurrentDate() }}</span></p>
-        <p><strong>Fecha de evaluación:</strong> <span class="data-box">{{ getEncuestaFecha() }}</span></p>
-      </div>
-
-      <!-- Resultados ICE -->
-      <div *ngIf="resultados.length > 0" class="results-section">
-        <h3>CÁLCULO ICE POR COMPETENCIA:</h3>
-        <div class="ice-competencias">
-          <div class="competencias-grid">
-            <div class="competencia-item" *ngFor="let competencia of competenciasNombres; let i = index">
-              {{ competencia }} → <span class="data-box">{{ getValorCompetencia(i + 1) }}</span>
+    <!-- Resultados ICE -->
+    <div *ngIf="encuestaSeleccionada && resultados.length > 0" class="ice-results">
+      
+      <!-- Resumen General -->
+      <ion-card class="summary-card">
+        <ion-card-header>
+          <ion-card-title>Resumen General ICE</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <div class="summary-grid">
+            <div class="summary-item">
+              <ion-text color="primary">
+                <h1>{{ calcularIceGeneral().toFixed(3) }}</h1>
+              </ion-text>
+              <ion-text>
+                <p>Puntuación Total</p>
+              </ion-text>
+            </div>
+            <div class="summary-item">
+              <ion-text [color]="getNivelIceGeneral().nivel === 'Alto' ? 'success' : getNivelIceGeneral().nivel === 'Medio' ? 'warning' : 'danger'">
+                <h2>{{ getNivelIceGeneral().nivel }}</h2>
+              </ion-text>
+              <ion-text>
+                <p>{{ getNivelIceGeneral().valoracion }}</p>
+              </ion-text>
             </div>
           </div>
-        </div>
+          <ion-text>
+            <p><strong>Recomendación:</strong> {{ getNivelIceGeneral().acciones }}</p>
+          </ion-text>
+        </ion-card-content>
+      </ion-card>
 
-        <!-- Selector de gráfico implementado -->
-        <div class="chart-container">
-          <h4>VALORACIÓN ICE</h4>
-          
-          <!-- Controles del gráfico -->
-          <div class="chart-controls">
-            <ion-item>
-              <ion-label>Tipo de gráfico:</ion-label>
-              <ion-select [(ngModel)]="tipoGrafico" (ionChange)="cambiarTipoGrafico($event.detail.value)">
-                <ion-select-option value="canvas">Pastel (Canvas)</ion-select-option>
-                <ion-select-option value="pie">Pastel (Chart.js)</ion-select-option>
-                <ion-select-option value="doughnut">Dona</ion-select-option>
-                <ion-select-option value="bar">Barras</ion-select-option>
-                <ion-select-option value="radar">Radar</ion-select-option>
-              </ion-select>
+      <!-- Controles del Gráfico -->
+      <ion-card class="chart-controls">
+        <ion-card-header>
+          <ion-card-title>Visualización de Competencias</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <ion-item>
+            <ion-label>Tipo de Gráfico:</ion-label>
+            <ion-select [(ngModel)]="tipoGrafico" (ionChange)="cambiarTipoGrafico($event.detail.value)">
+              <ion-select-option value="pie">Circular</ion-select-option>
+              <ion-select-option value="doughnut">Dona</ion-select-option>
+              <ion-select-option value="bar">Barras</ion-select-option>
+              <ion-select-option value="radar">Radar</ion-select-option>
+            </ion-select>
+          </ion-item>
+          <div class="chart-actions">
+            <ion-button (click)="recrearGrafico()" fill="outline" size="small">
+              <ion-icon name="refresh" slot="start"></ion-icon>
+              Recrear Gráfico
+            </ion-button>
+            <ion-button (click)="diagnosticarEstado()" fill="outline" size="small" color="secondary">
+              <ion-icon name="bug" slot="start"></ion-icon>
+              Diagnosticar
+            </ion-button>
+          </div>
+        </ion-card-content>
+      </ion-card>
+
+      <!-- Gráfico de Competencias -->
+      <ion-card class="chart-card">
+        <ion-card-content>
+          <div class="chart-container">
+            <canvas #pieChart></canvas>
+          </div>
+        </ion-card-content>
+      </ion-card>
+
+      <!-- Tabla de Competencias -->
+      <ion-card class="competencias-table">
+        <ion-card-header>
+          <ion-card-title>Detalle por Competencias</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <ion-list>
+            <ion-item *ngFor="let resultado of getResultadosFiltrados(); let i = index" lines="full">
+              <div class="competencia-item" slot="start">
+                <div 
+                  class="color-indicator" 
+                  [style.background-color]="resultado.color">
+                </div>
+              </div>
+              <ion-label>
+                <h3>{{ resultado.nombre }}</h3>
+                <div class="competencia-details">
+                  <ion-text color="medium">
+                    <p>Puntuación: {{ resultado.puntuacionCompetencia.toFixed(3) }}</p>
+                  </ion-text>
+                  <ion-text 
+                    [color]="resultado.nivel === 'Alto' ? 'success' : resultado.nivel === 'Medio' ? 'warning' : 'danger'">
+                    <p>Nivel: {{ resultado.nivel }}</p>
+                  </ion-text>
+                  <div class="progress-bar">
+                    <div 
+                      class="progress-fill" 
+                      [style.width.%]="getCompetenciaPercentage(resultado)"
+                      [style.background-color]="resultado.color">
+                    </div>
+                  </div>
+                </div>
+              </ion-label>
             </ion-item>
-            
-            <!-- Botones de control -->
-            <ion-button fill="outline" size="small" (click)="verificarDatos()">
-              <ion-icon name="bug-outline"></ion-icon>
-              Debug
-            </ion-button>
-            
-            <ion-button fill="clear" size="small" (click)="forzarRedibujado()">
-              <ion-icon name="refresh-outline"></ion-icon>
-              Actualizar
-            </ion-button>
-          </div>
+          </ion-list>
+        </ion-card-content>
+      </ion-card>
+    </div>
 
-          <!-- Canvas para el gráfico -->
-          <div class="chart-wrapper">
-            <canvas #pieChart id="pieChart" width="400" height="400" style="max-width: 100%; max-height: 400px;">
-            </canvas>
-          </div>
+    <!-- Selector de Encuestas IEPM -->
+    <ion-card class="selector-card" *ngIf="encuestasIEPM.length > 0">
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="analytics" color="secondary"></ion-icon>
+          Evaluación IEPM (Índice de Emprendimiento y Productividad Municipal)
+        </ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-item>
+          <ion-select
+            [(ngModel)]="encuestaSeleccionadaIEPM"
+            (ionChange)="onEncuestaSeleccionadaIEPMChange($event)"
+            placeholder="Seleccionar encuesta IEPM"
+            interface="popover">
+            <ion-select-option *ngFor="let encuesta of encuestasIEPM" [value]="encuesta.idEncuesta">
+              Encuesta {{ encuesta.idEncuesta }} - {{ getFechaEvaluacion(encuesta) }}
+            </ion-select-option>
+          </ion-select>
+        </ion-item>
+      </ion-card-content>
+    </ion-card>
 
-          <!-- Información adicional -->
-          <div class="chart-info" *ngIf="resultados && resultados.length > 0">
-            <ion-text color="medium">
-              <p>Total de competencias: {{ resultados.length }}</p>
-              <p>ICE General: {{ calcularIceGeneral() | number:'1.2-2' }}</p>
-            </ion-text>
-          </div>
-
-          <!-- Leyenda del gráfico -->
-          <div class="pie-legend">
-  <div *ngFor="let resultado of getResultadosFiltrados(); let i = index" class="legend-item">
-    <span class="legend-color" [style.background-color]="colors[resultado.idCompetencia - 1]"></span>
-    <span class="legend-label">
-      {{ competenciasNombres[resultado.idCompetencia - 1] }} ({{ getCompetenciaPercentage(resultado).toFixed(1) }}%)
-    </span>
-  </div>
-</div>
-
-        <!-- Tabla de resultados ICE -->
-        <table class="results-table">
-          <thead>
-            <tr>
-              <th>INDICADOR</th>
-              <th>VALOR</th>
-              <th>NIVEL</th>
-              <th>ACCIONES</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>ICE General</td>
-              <td>{{ calcularIceGeneral().toFixed(3) }}/1</td>
-              <td>{{ getNivelIceGeneral().nivel }}</td>
-              <td>{{ getNivelIceGeneral().acciones }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Sección IEPM -->
-      <div *ngIf="showIEPM && iepmData" class="iepm-results-section">
-        <h3>RESULTADOS IEPM</h3>
-        
-        <!-- Resultado General -->
-        <div class="iepm-total">
-          <h4>Resultado General</h4>
-          <div class="total-card">
-            <p><strong>Puntaje:</strong> {{ iepmData.resultadoTotal?.puntaje?.toFixed(3) || 'N/A' }}/1</p>
-            <p><strong>Valoración:</strong> {{ iepmData.resultadoTotal?.valoracion || 'N/A' }}</p>
-            <p><strong>Criterio:</strong> {{ iepmData.resultadoTotal?.criterio || 'N/A' }}</p>
-          </div>
-        </div>
-        
-        <!-- Por Dimensión -->
-        <div class="iepm-dimensions">
-          <h4>Por Dimensión</h4>
-          <div class="dimensions-grid">
-            <div *ngFor="let dimension of iepmData.porDimension" class="dimension-card">
-              <h5>{{ dimension.dimension }}</h5>
-              <p><strong>Puntaje:</strong> {{ dimension.puntaje }}/{{ dimension.puntaje >= 5 ? 5 : '5' }}</p>
-              <p><strong>Porcentaje:</strong> {{ dimension.porcentaje.toFixed(1) }}%</p>
+    <!-- Resultados IEPM -->
+    <div *ngIf="showIEPM && iepmData" class="iepm-results">
+      
+      <!-- Resumen IEPM -->
+      <ion-card class="iepm-summary">
+        <ion-card-header>
+          <ion-card-title>Resumen IEPM</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <div class="iepm-summary-grid">
+            <div class="iepm-item">
+              <ion-text color="secondary">
+                <h1>{{ iepmData.resultadoTotal.puntaje.toFixed(2) }}</h1>
+              </ion-text>
+              <ion-text>
+                <p>Puntuación IEPM</p>
+              </ion-text>
+            </div>
+            <div class="iepm-item">
+              <ion-text [color]="getNivelPuntaje(iepmData.resultadoTotal.puntaje).color">
+                <h2>{{ iepmData.resultadoTotal.valoracion }}</h2>
+              </ion-text>
+              <ion-text>
+                <p>Valoración</p>
+              </ion-text>
             </div>
           </div>
-        </div>
-        
-        <!-- Por Indicador -->
-        <div class="iepm-indicators">
-          <h4>Por Indicador</h4>
-          <table class="indicators-table">
-            <thead>
-              <tr>
-                <th>Indicador</th>
-                <th>Dimensión</th>
-                <th>Puntaje</th>
-                <th>Porcentaje</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let indicador of iepmData.porIndicador">
-                <td>{{ indicador.indicador }}</td>
-                <td>{{ indicador.dimension }}</td>
-                <td>{{ indicador.puntaje }}/{{ indicador.puntaje >= 5 ? 5 : '5' }}</td>
-                <td>{{ indicador.porcentaje.toFixed(1) }}%</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        
-        <!-- Acciones Recomendadas -->
-        <div class="recommended-actions">
-          <h4>Acciones Recomendadas</h4>
-          <p><strong>Descripción:</strong> {{ iepmData.accionRecomendada.descripcion || 'N/A' }}</p>
-          <p><strong>Recomendaciones:</strong> {{ iepmData.accionRecomendada.recomendaciones || 'N/A' }}</p>
-          <p><strong>Rango:</strong> {{ iepmData.accionRecomendada.rango || 'N/A' }}</p>
-        </div>
-      </div>
+        </ion-card-content>
+      </ion-card>
 
-      <!-- Comentarios -->
-      <div class="comments-section" *ngIf="comentarios">
-        <h3>COMENTARIOS</h3>
-        <ion-card>
-          <ion-card-content>
-            <div class="comments-text" [innerHTML]="comentarios"></div>
-          </ion-card-content>
-        </ion-card>
-      </div>
+      <!-- Gráfico IEPM -->
+      <ion-card class="iepm-chart-card">
+        <ion-card-header>
+          <ion-card-title>Evaluación por Dimensiones</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <div class="chart-container">
+            <canvas #iepmChart></canvas>
+          </div>
+        </ion-card-content>
+      </ion-card>
 
-      <!-- Footer -->
-      <div class="print-footer">
-        <p>Reporte generado el {{ getCurrentDate() }} a las {{ getCurrentTime() }}</p>
-        <p>Sistema de Evaluación de Competencias Emprendedoras</p>
-      </div>
+      <!-- Dimensiones IEPM -->
+      <ion-card class="dimensiones-card">
+        <ion-card-header>
+          <ion-card-title>Análisis por Dimensiones</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <ion-list>
+            <div *ngFor="let dimension of iepmData.porDimension" class="dimension-section">
+              <ion-item color="light">
+                <ion-icon [style.color]="getColorDimension(dimension.idDimension)" name="layers" slot="start"></ion-icon>
+                <ion-label>
+                  <h2>{{ dimension.dimension }}</h2>
+                  <div class="dimension-score">
+                    <ion-text color="dark">
+                      <p>Puntuación: {{ dimension.puntaje.toFixed(2) }}/5.0 ({{ dimension.porcentaje.toFixed(1) }}%)</p>
+                    </ion-text>
+                    <ion-badge [color]="getNivelPuntaje(dimension.puntaje).nivel === 'Alto' ? 'success' : getNivelPuntaje(dimension.puntaje).nivel === 'Medio' ? 'warning' : 'danger'">
+                      {{ getNivelPuntaje(dimension.puntaje).nivel }}
+                    </ion-badge>
+                  </div>
+                </ion-label>
+              </ion-item>
+              
+              <!-- Indicadores de esta dimensión -->
+              <div class="indicadores-list">
+                <ion-item *ngFor="let indicador of getIndicadoresPorDimension(dimension.idDimension)" lines="inset">
+                  <ion-label>
+                    <h3>{{ indicador.indicador }}</h3>
+                    <div class="indicador-details">
+                      <ion-text color="medium">
+                        <p>Puntuación: {{ indicador.puntaje.toFixed(2) }}/5.0</p>
+                      </ion-text>
+                      <div class="progress-bar-small">
+                        <div 
+                          class="progress-fill-small" 
+                          [style.width.%]="indicador.porcentaje"
+                          [style.background-color]="getColorDimension(dimension.idDimension)">
+                        </div>
+                      </div>
+                    </div>
+                  </ion-label>
+                </ion-item>
+              </div>
+            </div>
+          </ion-list>
+        </ion-card-content>
+      </ion-card>
+
+      <!-- Recomendaciones -->
+      <ion-card class="recommendations-card">
+        <ion-card-header>
+          <ion-card-title>
+            <ion-icon name="bulb" color="warning"></ion-icon>
+            Recomendaciones de Mejora
+          </ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <ion-text>
+            <h3>{{ iepmData.accionRecomendada.descripcion }}</h3>
+            <p>{{ iepmData.accionRecomendada.recomendaciones }}</p>
+            <p><strong>Rango de aplicación:</strong> {{ iepmData.accionRecomendada.rango }}</p>
+          </ion-text>
+        </ion-card-content>
+      </ion-card>
+    </div>
+
+    <!-- Botón de Comentarios -->
+    <ion-button 
+      (click)="toggleComentarios()" 
+      expand="block" 
+      fill="outline" 
+      color="tertiary"
+      class="comments-toggle">
+      <ion-icon name="chatbubbles" slot="start"></ion-icon>
+      {{ showSideComments ? 'Ocultar' : 'Mostrar' }} Comentarios
+    </ion-button>
+
+    <!-- Panel de Comentarios -->
+    <ion-card *ngIf="showSideComments" class="comments-card">
+      <ion-card-header>
+        <ion-card-title>Comentarios y Observaciones</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-textarea
+          [(ngModel)]="comentarios"
+          placeholder="Agregar comentarios sobre la evaluación..."
+          rows="6"
+          maxlength="1000">
+        </ion-textarea>
+        <div class="comments-actions">
+          <!-- ERROR CORREGIDO: loadSavedComments() debe ser público en el componente -->
+          <ion-button (click)="reloadComments()" fill="outline" size="small">
+            <ion-icon name="refresh" slot="start"></ion-icon>
+            Recargar
+          </ion-button>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Acciones Finales -->
+    <div class="final-actions">
+      <ion-button (click)="imprimir()" expand="block" color="primary">
+        <ion-icon name="print" slot="start"></ion-icon>
+        Imprimir Resultados
+      </ion-button>
+      
+      <ion-button (click)="verificarDatos()" expand="block" fill="outline" color="secondary">
+        <ion-icon name="checkmark-circle" slot="start"></ion-icon>
+        Verificar Datos
+      </ion-button>
     </div>
   </div>
 
-  <!-- Botón de impresión flotante -->
-  <ion-fab vertical="bottom" horizontal="end" slot="fixed">
-    <ion-fab-button (click)="imprimir()">
-      <ion-icon name="print"></ion-icon>
-    </ion-fab-button>
-  </ion-fab>
+  <!-- Área de impresión oculta -->
+  <div #printContent class="print-content" style="display: none;">
+    <!-- Contenido específico para impresión -->
+    <div class="print-header">
+      <h1>Resultados de Evaluación Emprendedora</h1>
+      <p>Emprendedor: {{ emprendedor?.nombre }}</p>
+      <p>Fecha: {{ getCurrentDate() }}</p>
+      <hr>
+    </div>
+    <!-- El contenido se puede expandir según necesidades -->
+  </div>
 
-
-<style>
-/* Estilos para el contenedor del gráfico */
-.chart-container {
-  padding: 16px;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  margin: 16px 0;
-}
-
-.chart-controls {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-}
-
-.chart-controls ion-item {
-  flex: 1;
-  min-width: 200px;
-}
-
-.chart-wrapper {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 400px;
-  position: relative;
-}
-
-.chart-info {
-  text-align: center;
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid #eee;
-}
-
-#pieChart {
-  border: 1px solid #ddd;
-  border-radius: 4px;
-}
-
-.pie-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  justify-content: center;
-  margin-top: 16px;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.legend-color {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  display: block;
-}
-
-.legend-label {
-  font-size: 14px;
-}
-
-/* Estilos adicionales para la página */
-.results-content {
-  --background: #f5f5f5;
-}
-
-.results-container {
-  padding: 16px;
-}
-
-.results-info {
-  background: white;
-  padding: 16px;
-  border-radius: 8px;
-  margin-bottom: 16px;
-}
-
-.data-box {
-  background: #f0f0f0;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-weight: normal;
-}
-
-.results-section, .iepm-results-section {
-  background: white;
-  padding: 16px;
-  border-radius: 8px;
-  margin-bottom: 16px;
-}
-
-.competencias-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.competencia-item {
-  padding: 8px;
-  background: #f9f9f9;
-  border-radius: 4px;
-  border-left: 4px solid #3880ff;
-}
-
-.results-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 16px;
-}
-
-.results-table th, .results-table td {
-  border: 1px solid #ddd;
-  padding: 8px;
-  text-align: left;
-}
-
-.results-table th {
-  background: #f0f0f0;
-  font-weight: bold;
-}
-
-.iepm-total .total-card {
-  background: #f9f9f9;
-  padding: 16px;
-  border-radius: 8px;
-  margin-top: 8px;
-}
-
-.dimensions-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
-  margin-top: 16px;
-}
-
-.dimension-card {
-  background: #f9f9f9;
-  padding: 16px;
-  border-radius: 8px;
-  border-left: 4px solid #28a745;
-}
-
-.indicators-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 16px;
-}
-
-.indicators-table th, .indicators-table td {
-  border: 1px solid #ddd;
-  padding: 8px;
-  text-align: left;
-}
-
-.indicators-table th {
-  background: #f0f0f0;
-  font-weight: bold;
-}
-
-.recommended-actions {
-  background: #fff3cd;
-  padding: 16px;
-  border-radius: 8px;
-  margin-top: 16px;
-  border-left: 4px solid #ffc107;
-}
-
-.comments-section {
-  margin-top: 16px;
-}
-
-.print-footer {
-  text-align: center;
-  margin-top: 24px;
-  padding-top: 16px;
-  border-top: 2px solid #ddd;
-  font-size: 14px;
-  color: #666;
-}
-
-.loading-container, .error-container, .no-encuestas {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 50vh;
-  flex-direction: column;
-}
-
-.encuesta-selectors {
-  background: white;
-  padding: 16px;
-  border-radius: 8px;
-  margin-bottom: 16px;
-}
-
-.selector-item {
-  margin-bottom: 8px;
-}
-
-/* Estilos para impresión */
-@media print {
-  .chart-controls, ion-fab, ion-header {
-    display: none !important;
-  }
-  
-  .chart-container {
-    box-shadow: none;
-    border: 1px solid #ddd;
-  }
-  
-  .results-content {
-    --background: white;
-  }
-  
-  .results-container {
-    padding: 0;
-  }
-}
-</style>
+</ion-content>
