@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule, DatePipe } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { IonicModule } from '@ionic/angular';
 import { ApiService } from 'src/app/Service/api.service';
@@ -18,19 +18,10 @@ export class ReporteriaPage implements OnInit {
   reporteFiltrado: any[] = [];
   filtro: string = '';
 
-  displayedColumns = [
-    'nombre',
-    'correo',
-    'fechaRegistro',
-    'fechaUltimaEvaluacion',
-    'puntajeIEPM',
-    'puntajeICE',
-  ];
+  displayedColumns = ['nombre', 'correo', 'fechaRegistro'];
 
   constructor(private api: ApiService) {}
-  
-  fechasDisponibles: string[] = [];
-  
+
   ngOnInit() {
     this.loadReporte();
   }
@@ -39,72 +30,26 @@ export class ReporteriaPage implements OnInit {
     try {
       const emprendedores: any = await this.api.getEmprendedores().toPromise();
 
-      const reportePromises = emprendedores.map(async (e: any) => {
-        // ICE
-        const resumenIce: any = await this.api
-          .getResumenIce(e.idEmprendedor)
-          .toPromise()
-          .catch(() => null);
-        const puntajeICE = resumenIce?.ice ?? null;
+      this.reporte = emprendedores.map((e: any) => ({
+        nombre: e.nombre,
+        correo: e.correo,
+        fechaRegistro: e.fechaRegistro,
+      }));
 
-        // IEPM
-        const respuestas: any = await this.api
-          .getRespuestasIepm(0, e.idEmprendedor)
-          .toPromise()
-          .catch(() => []);
-        const ultimaEncuesta = respuestas.length
-          ? respuestas.sort(
-              (a: any, b: any) =>
-                new Date(b.fechaCalculo || b.fechaEvaluacion).getTime() -
-                new Date(a.fechaCalculo || a.fechaEvaluacion).getTime()
-            )[0]
-          : null;
-        const puntajeIEPM = ultimaEncuesta ? ultimaEncuesta.puntajeIepm : null;
-
-        return {
-          nombre: e.nombre,
-          correo: e.correo,
-          fechaRegistro: e.fechaRegistro,
-          fechaUltimaEvaluacion: ultimaEncuesta?.fechaEvaluacion ?? null,
-          puntajeIEPM,
-          puntajeICE,
-        };
-        
-      });
-
-      this.reporte = await Promise.all(reportePromises);
       this.reporteFiltrado = [...this.reporte];
     } catch (error) {
       console.error('Error cargando reporte:', error);
     }
   }
 
-  fechaDesde: string = '';
-  fechaHasta: string = '';
-
   filtrarReporte() {
     const filtroText = this.filtro.toLowerCase();
 
     this.reporteFiltrado = this.reporte.filter((r) => {
-      // Filtrar por nombre/correo
-      const matchesText =
+      return (
         r.nombre.toLowerCase().includes(filtroText) ||
-        r.correo.toLowerCase().includes(filtroText);
-
-      // Filtrar por fecha
-      let matchesFecha = true;
-      if (this.fechaDesde) {
-        matchesFecha =
-          matchesFecha &&
-          new Date(r.fechaRegistro) >= new Date(this.fechaDesde);
-      }
-      if (this.fechaHasta) {
-        matchesFecha =
-          matchesFecha &&
-          new Date(r.fechaRegistro) <= new Date(this.fechaHasta);
-      }
-
-      return matchesText && matchesFecha;
+        r.correo.toLowerCase().includes(filtroText)
+      );
     });
   }
 
@@ -131,31 +76,26 @@ export class ReporteriaPage implements OnInit {
   }
 
   exportPDF() {
-  const doc = new jsPDF();
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.setTextColor(0, 0, 0);
+    doc.text('Reporte Emprendedores', 14, 22);
 
-  // Título en negro
-  doc.setFontSize(18);
-  doc.setTextColor(0, 0, 0); // negro
-  doc.text('Reporte Emprendedores', 14, 22);
+    autoTable(doc, {
+      startY: 30,
+      head: [this.displayedColumns.map(c => c.toUpperCase())],
+      body: this.reporteFiltrado.map(r =>
+        this.displayedColumns.map(c => {
+          let val = r[c];
+          if (val instanceof Date) val = new Date(val).toLocaleDateString();
+          return val ?? '-';
+        })
+      ),
+      theme: 'grid',
+      headStyles: { fillColor: [33, 150, 243], textColor: 255 },
+      alternateRowStyles: { fillColor: [240, 248, 255] },
+    });
 
-  // Tabla con autoTable
-  autoTable(doc, {
-    startY: 30,
-    head: [this.displayedColumns.map(c => c.toUpperCase())],
-    body: this.reporteFiltrado.map(r =>
-      this.displayedColumns.map(c => {
-        let val = r[c];
-        if (val instanceof Date) val = new Date(val).toLocaleDateString();
-        return val ?? '-';
-      })
-    ),
-    theme: 'grid',
-    headStyles: { fillColor: [33, 150, 243], textColor: 255 }, // encabezado azul con texto blanco
-    alternateRowStyles: { fillColor: [240, 248, 255] }, // filas intercaladas azul claro
-  });
-
-  doc.save('reporte_emprendedores.pdf');
-}
-
-  
+    doc.save('reporte_emprendedores.pdf');
+  }
 }

@@ -1,11 +1,9 @@
 <ion-header [translucent]="true">
   <ion-toolbar color="primary">
-    <!-- Botón de regresar -->
     <ion-buttons slot="start">
       <ion-back-button defaultHref="/home"></ion-back-button>
     </ion-buttons>
 
-    <!-- Logo y título -->
     <ion-title>
       <div class="header-content">
         <img src="assets/LogoCentro.jpg" alt="Logo" class="logo">
@@ -17,7 +15,6 @@
 
 <ion-content [fullscreen]="true" class="ion-padding">
 
-  <!-- Filtros y botones -->
   <div class="toolbar-reporteria">
     <ion-input placeholder="Buscar por nombre o correo" [(ngModel)]="filtro" (ionInput)="filtrarReporte()"></ion-input>
 
@@ -33,7 +30,6 @@
     </div>
   </div>
 
-  <!-- Tabla con scroll -->
   <div class="table-wrapper">
     <table class="table-reporteria">
       <thead>
@@ -41,9 +37,6 @@
           <th>Nombre</th>
           <th>Correo</th>
           <th>Fecha Registro</th>
-          <th>Última Evaluación</th>
-          <th>Puntaje IEPM</th>
-          <th>Puntaje ICE</th>
         </tr>
       </thead>
       <tbody>
@@ -51,9 +44,6 @@
           <td>{{ e.nombre }}</td>
           <td>{{ e.correo }}</td>
           <td>{{ e.fechaRegistro | date:'shortDate' }}</td>
-          <td>{{ e.fechaUltimaEvaluacion ? (e.fechaUltimaEvaluacion | date:'shortDate') : '-' }}</td>
-          <td>{{ e.puntajeIEPM ?? '-' }}</td>
-          <td>{{ e.puntajeICE ?? '-' }}</td>
         </tr>
       </tbody>
     </table>
