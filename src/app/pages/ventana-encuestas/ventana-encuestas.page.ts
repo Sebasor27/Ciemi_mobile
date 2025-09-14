@@ -150,7 +150,7 @@ export class VentanaEncuestasPage implements OnInit {
 
   async goToResults() {
     // Navegar directamente a los resultados
-    this.router.navigate([`/resultados/${this.idEmprendedor}`]);
+   this.router.navigate([`/informacion-resultados/${this.idEmprendedor}`]);
   }
 
   // Método para regresar a la página de detalles del emprendedor
