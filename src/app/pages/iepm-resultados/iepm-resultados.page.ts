@@ -258,7 +258,7 @@ export class IepmResultadosPage implements OnInit, OnDestroy {
   }
 
   navigateBack(): void {
-    this.router.navigate(['/resultados', this.idEmprendedor]);
+    this.router.navigate(['/informacion-resultados', this.idEmprendedor]);
   }
 
   navegarAGrafica(): void {
