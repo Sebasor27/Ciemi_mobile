@@ -1,0 +1,346 @@
+<ion-header [translucent]="true">
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start">
+      <ion-button (click)="navigateBack()">
+        <ion-icon name="arrow-back-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>Comparaciones y Recomendaciones</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <!-- Loading Spinner -->
+  <div *ngIf="isLoading" class="loading-container">
+    <ion-spinner name="crescent" color="primary"></ion-spinner>
+    <p>Cargando datos...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error && !isLoading" class="error-container">
+    <ion-icon name="alert-circle-outline" color="danger"></ion-icon>
+    <h3>Error al cargar datos</h3>
+    <p>{{ error }}</p>
+    <ion-button fill="outline" color="primary" (click)="ngOnInit()">
+      Reintentar
+    </ion-button>
+  </div>
+
+  <!-- Main Content -->
+  <div *ngIf="!isLoading && !error && hasResultados" class="content-wrapper">
+    
+    <!-- Header Info -->
+    <ion-card class="emprendedor-header">
+      <ion-card-content>
+        <div class="header-content">
+          <div class="emprendedor-info">
+            <h2>{{ emprendedor?.nombre }}</h2>
+            <p>{{ emprendedor?.email }}</p>
+          </div>
+          <div class="scores-overview">
+            <div class="score-item">
+              <span class="score-label">ICE General</span>
+              <span class="score-value primary">{{ (promedioICE * 100).toFixed(1) }}%</span>
+            </div>
+            <div class="score-item">
+              <span class="score-label">IEPM General</span>
+              <span class="score-value secondary">{{ (promedioIEPM * 100).toFixed(1) }}%</span>
+            </div>
+          </div>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Navigation Tabs -->
+    <div class="tab-navigation">
+      <ion-button 
+        fill="clear" 
+        [color]="activeTab === 'comparacion' ? 'primary' : 'medium'"
+        [class.active-tab]="activeTab === 'comparacion'"
+        (click)="setActiveTab('comparacion')">
+        Comparación Detallada
+      </ion-button>
+      <ion-button 
+        fill="clear"
+        [color]="activeTab === 'fortalezas' ? 'primary' : 'medium'"
+        [class.active-tab]="activeTab === 'fortalezas'"
+        (click)="setActiveTab('fortalezas')">
+        Análisis FODA
+      </ion-button>
+      <ion-button 
+        fill="clear"
+        [color]="activeTab === 'comentarios' ? 'primary' : 'medium'"
+        [class.active-tab]="activeTab === 'comentarios'"
+        (click)="setActiveTab('comentarios')">
+        Comentarios
+      </ion-button>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="tab-content">
+      
+      <!-- Comparación Detallada Tab -->
+      <div *ngIf="activeTab === 'comparacion'" class="tab-panel">
+        <ion-card>
+          <ion-card-header>
+            <ion-card-title>Comparación ICE vs IEPM</ion-card-title>
+            <ion-card-subtitle>Análisis comparativo por competencias</ion-card-subtitle>
+          </ion-card-header>
+          <ion-card-content>
+            <div class="comparacion-grid">
+              <div 
+                *ngFor="let item of comparacionData; trackBy: trackByComparacion"
+                class="comparacion-item"
+                (click)="mostrarDetalleComparacion(item)">
+                
+                <div class="competencia-header">
+                  <h4>{{ item.competencia }}</h4>
+                  <ion-icon 
+                    name="information-circle-outline" 
+                    class="info-icon"
+                    color="medium">
+                  </ion-icon>
+                </div>
+                
+                <div class="scores-comparison">
+                  <div class="score-bar">
+                    <div class="score-info">
+                      <span class="score-label">ICE</span>
+                      <span class="score-value">{{ (item.iceScore * 100).toFixed(1) }}%</span>
+                    </div>
+                    <div class="progress-bar">
+                      <div 
+                        class="progress-fill ice-score"
+                        [style.width.%]="item.iceScore * 100">
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="score-bar">
+                    <div class="score-info">
+                      <span class="score-label">IEPM</span>
+                      <span class="score-value">{{ (item.iepmScore * 100).toFixed(1) }}%</span>
+                    </div>
+                    <div class="progress-bar">
+                      <div 
+                        class="progress-fill iepm-score"
+                        [style.width.%]="item.iepmScore * 100">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="diferencia" 
+                     [class.positive]="item.diferencia > 0.05"
+                     [class.negative]="item.diferencia < -0.05"
+                     [class.neutral]="isNeutralDifference(item.diferencia)">
+                  <ion-icon 
+                    [name]="item.diferencia > 0.05 ? 'trending-up-outline' : 
+                           item.diferencia < -0.05 ? 'trending-down-outline' : 'remove-outline'">
+                  </ion-icon>
+                  <span>{{ (item.diferencia * 100).toFixed(1) }}%</span>
+                </div>
+              </div>
+            </div>
+          </ion-card-content>
+        </ion-card>
+      </div>
+
+      <!-- Análisis FODA Tab -->
+      <div *ngIf="activeTab === 'fortalezas'" class="tab-panel">
+        
+        <!-- Fortalezas -->
+        <ion-card class="foda-card fortalezas">
+          <ion-card-header>
+            <ion-card-title>
+              <ion-icon name="trending-up-outline" color="success"></ion-icon>
+              Fortalezas (≥70%)
+            </ion-card-title>
+          </ion-card-header>
+          <ion-card-content>
+            <div *ngIf="getFortalezas().length === 0" class="empty-state">
+              <p>No se identificaron fortalezas destacadas en este rango.</p>
+            </div>
+            <div class="competencias-grid">
+              <div 
+                *ngFor="let competencia of getFortalezas(); trackBy: trackByCompetencia"
+                class="competencia-chip fortaleza">
+                <div class="chip-content">
+                  <span class="competencia-name">{{ competencia.nombre }}</span>
+                  <span class="competencia-score">{{ (competencia.puntuacionCompetencia * 100).toFixed(1) }}%</span>
+                </div>
+              </div>
+            </div>
+          </ion-card-content>
+        </ion-card>
+
+        <!-- Oportunidades -->
+        <ion-card class="foda-card oportunidades">
+          <ion-card-header>
+            <ion-card-title>
+              <ion-icon name="arrow-up-outline" color="warning"></ion-icon>
+              Oportunidades de Mejora (50-69%)
+            </ion-card-title>
+          </ion-card-header>
+          <ion-card-content>
+            <div *ngIf="getOportunidades().length === 0" class="empty-state">
+              <p>No se identificaron oportunidades en este rango.</p>
+            </div>
+            <div class="competencias-grid">
+              <div 
+                *ngFor="let competencia of getOportunidades(); trackBy: trackByCompetencia"
+                class="competencia-chip oportunidad">
+                <div class="chip-content">
+                  <span class="competencia-name">{{ competencia.nombre }}</span>
+                  <span class="competencia-score">{{ (competencia.puntuacionCompetencia * 100).toFixed(1) }}%</span>
+                </div>
+              </div>
+            </div>
+          </ion-card-content>
+        </ion-card>
+
+        <!-- Debilidades -->
+        <ion-card class="foda-card debilidades">
+          <ion-card-header>
+            <ion-card-title>
+              <ion-icon name="trending-down-outline" color="danger"></ion-icon>
+              Áreas de Atención (<50%)
+            </ion-card-title>
+          </ion-card-header>
+          <ion-card-content>
+            <div *ngIf="getDebilidades().length === 0" class="empty-state">
+              <p>No se identificaron debilidades en este rango.</p>
+            </div>
+            <div class="competencias-grid">
+              <div 
+                *ngFor="let competencia of getDebilidades(); trackBy: trackByCompetencia"
+                class="competencia-chip debilidad">
+                <div class="chip-content">
+                  <span class="competencia-name">{{ competencia.nombre }}</span>
+                  <span class="competencia-score">{{ (competencia.puntuacionCompetencia * 100).toFixed(1) }}%</span>
+                </div>
+              </div>
+            </div>
+          </ion-card-content>
+        </ion-card>
+      </div>
+
+      <!-- Comentarios Tab -->
+      <div *ngIf="activeTab === 'comentarios'" class="tab-panel">
+        
+        <!-- Nuevo Comentario Personalizado -->
+        <ion-card class="new-comment-card">
+          <ion-card-header>
+            <ion-card-title>Agregar Comentario Personalizado</ion-card-title>
+          </ion-card-header>
+          <ion-card-content>
+            <ion-textarea
+              [(ngModel)]="nuevoComentario"
+              placeholder="Escriba su comentario personalizado aquí..."
+              rows="3"
+              maxlength="500">
+            </ion-textarea>
+            <div class="comment-actions">
+              <span class="char-counter">{{ nuevoComentario.length }}/500</span>
+              <ion-button 
+                fill="solid" 
+                color="primary"
+                (click)="agregarComentarioPersonalizado()"
+                [disabled]="!nuevoComentario.trim()">
+                <ion-icon name="add-outline" slot="start"></ion-icon>
+                Agregar
+              </ion-button>
+            </div>
+          </ion-card-content>
+        </ion-card>
+
+        <!-- Comentarios Predeterminados -->
+        <ion-card class="predefined-comments">
+          <ion-card-header>
+            <ion-card-title>Comentarios Predeterminados</ion-card-title>
+            <ion-card-subtitle>Seleccione comentarios relevantes</ion-card-subtitle>
+          </ion-card-header>
+          <ion-card-content>
+            <div class="predefined-grid">
+              <ion-chip 
+                *ngFor="let comentario of comentariosPredeterminados"
+                color="primary"
+                outline="true"
+                (click)="agregarComentarioPredeterminado(comentario)">
+                <ion-icon name="add-outline"></ion-icon>
+                <ion-label>{{ comentario }}</ion-label>
+              </ion-chip>
+            </div>
+          </ion-card-content>
+        </ion-card>
+
+        <!-- Lista de Comentarios Agregados -->
+        <ion-card *ngIf="comentarios.length > 0" class="comments-list">
+          <ion-card-header>
+            <ion-card-title>Comentarios Agregados ({{ comentarios.length }})</ion-card-title>
+          </ion-card-header>
+          <ion-card-content>
+            <div class="comments-container">
+              <div 
+                *ngFor="let comentario of comentarios; trackBy: trackByComentario"
+                class="comment-item"
+                [class.predeterminado]="comentario.tipo === 'predeterminado'"
+                [class.personalizado]="comentario.tipo === 'personalizado'">
+                
+                <div class="comment-header">
+                  <div class="comment-meta">
+                    <ion-icon 
+                      [name]="comentario.tipo === 'personalizado' ? 'person-outline' : 'settings-outline'"
+                      [color]="comentario.tipo === 'personalizado' ? 'primary' : 'medium'">
+                    </ion-icon>
+                    <span class="asesor">{{ comentario.asesor }}</span>
+                    <span class="fecha">{{ comentario.fecha | date:'short' }}</span>
+                  </div>
+                  <ion-button 
+                    fill="clear" 
+                    size="small" 
+                    color="danger"
+                    (click)="eliminarComentario(comentario.id)">
+                    <ion-icon name="trash-outline"></ion-icon>
+                  </ion-button>
+                </div>
+                
+                <div class="comment-text">
+                  <p>{{ comentario.texto }}</p>
+                </div>
+                
+                <div class="comment-type-indicator">
+                  <ion-chip 
+                    [color]="comentario.tipo === 'personalizado' ? 'primary' : 'medium'"
+                    size="small">
+                    {{ comentario.tipo === 'personalizado' ? 'Personalizado' : 'Predeterminado' }}
+                  </ion-chip>
+                </div>
+              </div>
+            </div>
+          </ion-card-content>
+        </ion-card>
+
+        <!-- Empty State para comentarios -->
+        <ion-card *ngIf="comentarios.length === 0" class="empty-comments">
+          <ion-card-content>
+            <div class="empty-state">
+              <ion-icon name="chatbox-outline" color="medium"></ion-icon>
+              <h3>No hay comentarios agregados</h3>
+              <p>Agregue comentarios predeterminados o escriba comentarios personalizados para este emprendedor.</p>
+            </div>
+          </ion-card-content>
+        </ion-card>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- No Results State -->
+  <div *ngIf="!isLoading && !error && !hasResultados" class="no-results">
+    <ion-icon name="analytics-outline" color="medium"></ion-icon>
+    <h3>Sin datos para comparar</h3>
+    <p>No se encontraron resultados ICE o IEPM para realizar la comparación.</p>
+  </div>
+
+</ion-content>

@@ -1,0 +1,126 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-title>Resultados ICE</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="navigateToHome()">
+        <ion-icon name="home-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-refresher slot="fixed" (ionRefresh)="recargarDatos()">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <div class="container">
+    <!-- Estado de carga -->
+    <ion-spinner *ngIf="isLoading" name="crescent" class="loading-spinner"></ion-spinner>
+
+    <!-- Mensaje de error -->
+    <ion-card *ngIf="error && !isLoading" color="danger">
+      <ion-card-content>
+        <ion-icon name="warning-outline"></ion-icon>
+        {{ error }}
+        <ion-button fill="outline" size="small" (click)="initializeComponent()">Reintentar</ion-button>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Datos principales -->
+    <ion-card *ngIf="!isLoading && !error">
+      <ion-card-header>
+        <ion-card-title>{{ emprendedor?.nombre }}</ion-card-title>
+        <ion-card-subtitle>ICE General: {{ calcularIceGeneral() | number: '1.2-2' }}</ion-card-subtitle>
+      </ion-card-header>
+    </ion-card>
+
+    <!-- Selector de gráfico -->
+    <ion-segment [value]="tipoGrafico" (ionChange)="cambiarTipoGrafico($event)" class="segment-custom">
+      <ion-segment-button value="pie">
+        <ion-label>Pie</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="doughnut">
+        <ion-label>Doughnut</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="bar">
+        <ion-label>Barras</ion-label>
+      </ion-segment-button>
+    </ion-segment>
+
+    <!-- Gráfico -->
+    <div class="chart-container">
+      <canvas #pieChart></canvas>
+    </div>
+
+    <!-- Estadísticas -->
+    <ion-card *ngIf="getEstadisticas() as stats">
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="analytics-outline"></ion-icon>
+          Estadísticas Generales
+        </ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-grid>
+          <ion-row>
+            <ion-col size="6">
+              <div class="stat-item">
+                <ion-icon name="trending-up-outline" color="success"></ion-icon>
+                <div>
+                  <strong>Promedio</strong>
+                  <p>{{ stats.promedio }}</p>
+                </div>
+              </div>
+            </ion-col>
+            <ion-col size="6">
+              <div class="stat-item">
+                <ion-icon name="arrow-up-outline" color="primary"></ion-icon>
+                <div>
+                  <strong>Máximo</strong>
+                  <p>{{ stats.maximo }}</p>
+                </div>
+              </div>
+            </ion-col>
+          </ion-row>
+          <ion-row>
+            <ion-col size="6">
+              <div class="stat-item">
+                <ion-icon name="arrow-down-outline" color="warning"></ion-icon>
+                <div>
+                  <strong>Mínimo</strong>
+                  <p>{{ stats.minimo }}</p>
+                </div>
+              </div>
+            </ion-col>
+            <ion-col size="6">
+              <div class="stat-item">
+                <ion-icon name="list-outline" color="medium"></ion-icon>
+                <div>
+                  <strong>Total</strong>
+                  <p>{{ stats.total }} competencias</p>
+                </div>
+              </div>
+            </ion-col>
+          </ion-row>
+        </ion-grid>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Botones de acción -->
+    <div class="actions">
+      <ion-button expand="block" color="secondary" (click)="navegarAResultados()">
+        <ion-icon name="document-text-outline" slot="start"></ion-icon>
+        Ver Resultados Completos
+      </ion-button>
+      <ion-button expand="block" color="tertiary" (click)="imprimir()">
+        <ion-icon name="print-outline" slot="start"></ion-icon>
+        Imprimir
+      </ion-button>
+      <ion-button expand="block" color="medium" (click)="navigateBack()">
+        <ion-icon name="arrow-back-outline" slot="start"></ion-icon>
+        Regresar
+      </ion-button>
+    </div>
+  </div>
+</ion-content>
