@@ -1,0 +1,143 @@
+:root {
+  --primary-blue: #9fb0e1;
+  --primary-blue-light: #b5c4e8;
+  --primary-blue-dark: #8a9dd9;
+
+  --text-primary: #050505;
+  --text-secondary: #0b0909;
+  --text-muted: #090808;
+
+  --light-bg: #325499;
+  --white: #ffffff;
+
+  --shadow-soft: 0 2px 20px rgba(17, 18, 20, 0.15);
+  --shadow-medium: 0 4px 25px rgba(13, 14, 14, 0.2);
+
+  --radius: 16px;
+  --radius-lg: 24px;
+}
+
+/* Fondo principal con degradado azul */
+body, ion-content {
+  --background: linear-gradient(135deg, #4a90e2 0%, #357abd 50%, #1e5f99 100%);
+}
+
+/* Header */
+.custom-header ion-toolbar {
+  --background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-blue-dark) 100%);
+  --color: var(--white);
+}
+.nav-button { --color: var(--white); }
+
+/* Main content */
+.main-content { 
+  --background: linear-gradient(135deg, #4a90e2 0%, #357abd 50%, #1e5f99 100%);
+}
+.content-container { 
+  padding: 20px;
+  background: transparent;
+}
+
+/* Loading/Error */
+.state-container { 
+  text-align: center; 
+  padding: 40px 20px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius);
+  backdrop-filter: blur(10px);
+}
+.state-text { 
+  margin-top: 12px; 
+  color: var(--white);
+  font-weight: 600;
+}
+
+/* Profile card */
+.profile-card {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+}
+.profile-header {
+  background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-blue-dark) 100%);
+  color: var(--white);
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.profile-avatar {
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  background: var(--white);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+.avatar-icon { font-size: 2rem; color: var(--primary-blue-dark); }
+
+/* Grid */
+.grid-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 20px;
+  margin: 20px 0;
+}
+
+/* Survey card */
+.survey-card {
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+}
+.survey-card .card-header {
+  background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-blue-dark) 100%);
+  color: var(--white);
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Comparison */
+.comparison-card {
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+  margin-bottom: 20px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+}
+
+/* Tools panel */
+.tools-panel {
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+  background: rgba(202, 219, 237, 0.95);
+  backdrop-filter: blur(10px);
+}
+
+/* Botones mejorados */
+ion-button {
+  --border-radius: var(--radius);
+  font-weight: 500;
+}
+
+ion-button.primary {
+  --background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+  --color: rgb(155, 209, 221);
+}
+
+ion-button.secondary {
+  --background: rgba(255, 255, 255, 0.9);
+  --color: #357abd;
+  --border-color: rgba(9, 10, 11, 0.3);
+  --border-style: solid;
+  --border-width: 1px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .profile-header { flex-direction: column; text-align: center; }
+  .content-container { padding: 15px; }
+}

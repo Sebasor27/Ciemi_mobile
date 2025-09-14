@@ -1,0 +1,48 @@
+.container {
+  padding: 16px;
+}
+
+.loading-spinner {
+  display: block;
+  margin: 40px auto;
+}
+
+.chart-container {
+  position: relative;
+  width: 100%;
+  height: 350px;
+  margin: 20px 0;
+}
+
+ion-segment.segment-custom {
+  margin: 12px 0;
+  ion-segment-button {
+    --color-checked: var(--ion-color-primary);
+    --indicator-color: var(--ion-color-primary);
+  }
+}
+
+ion-card {
+  margin: 12px 0;
+}
+
+ion-list {
+  margin-top: 20px;
+  ion-item {
+    --padding-start: 12px;
+    --inner-padding-end: 12px;
+
+    ion-avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+    }
+  }
+}
+
+.actions {
+  margin-top: 20px;
+  ion-button {
+    margin-bottom: 10px;
+  }
+}
