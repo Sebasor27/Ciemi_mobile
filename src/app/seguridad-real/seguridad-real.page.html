@@ -1,0 +1,46 @@
+<ion-header>
+  <ion-toolbar color="dark">
+    <ion-buttons slot="start">
+      <ion-button (click)="navigateBack()">
+        <ion-icon name="arrow-back"></ion-icon>
+        Volver
+      </ion-button>
+    </ion-buttons>
+    
+    <ion-title>Seguridad Informática</ion-title>
+    
+    <ion-buttons slot="primary">
+      <ion-button (click)="exportarReporte()">
+        <ion-icon slot="icon-only" name="cloud-download"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <ion-button expand="block" color="success" (click)="ejecutarDemoCompleta()">
+    EJECUTAR DEMOSTRACIÓN COMPLETA
+  </ion-button>
+
+  <ion-progress-bar *ngIf="cargando" type="indeterminate"></ion-progress-bar>
+
+  <ion-card *ngFor="let d of demos">
+    <ion-item>
+      <ion-icon [name]="d.icon" slot="start"></ion-icon>
+      <ion-label>
+        <h2>{{d.titulo}}</h2>
+        <p>{{d.sub}}</p>
+      </ion-label>
+      <ion-note slot="end" [color]="d.color">{{d.status}}</ion-note>
+    </ion-item>
+    <ion-card-content>
+      <pre>{{d.resultado}}</pre>
+    </ion-card-content>
+  </ion-card>
+
+  <ion-fab vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button (click)="scrollToTop()" color="dark">
+      <ion-icon name="arrow-up"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
+</ion-content>

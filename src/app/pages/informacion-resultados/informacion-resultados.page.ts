@@ -20,6 +20,34 @@ interface Encuesta {
   fechaAplicacion: string;
 }
 
+interface ResultadoICE {
+  dimension: string;
+  puntaje: number;
+  nivel: string;
+  descripcion: string;
+  recomendaciones: string[];
+}
+
+interface ResultadoIEPM {
+  factor: string;
+  puntaje: number;
+  nivel: string;
+  descripcion: string;
+  recomendaciones: string[];
+}
+
+interface DatosGrafica {
+  labels: string[];
+  data: number[];
+  colores: string[];
+}
+
+interface Comparaciones {
+  correlacion: number;
+  analisis: string;
+  recomendacionesIntegradas: string[];
+}
+
 @Component({
   selector: 'app-informacion-resultados',
   templateUrl: './informacion-resultados.page.html',
@@ -40,6 +68,14 @@ export class InformacionResultadosPage implements OnInit, OnDestroy {
   // Propiedades para el template
   encuestaSeleccionadaObj: Encuesta | null = null;
   encuestaSeleccionadaIEPMObj: Encuesta | null = null;
+
+  // Propiedades faltantes para la vista de impresión
+  isPrinting: boolean = false;
+  resultadosICE: ResultadoICE[] = [];
+  resultadosIEPM: ResultadoIEPM[] = [];
+  datosGraficaICE: DatosGrafica | null = null;
+  datosGraficaIEPM: DatosGrafica | null = null;
+  comparaciones: Comparaciones | null = null;
 
   isLoading = true;
   error: string | null = null;
@@ -157,9 +193,8 @@ export class InformacionResultadosPage implements OnInit, OnDestroy {
     this.syncEncuestaObjects();
   }
 
-  // ✅ MÉTODOS DE NAVEGACIÓN CORREGIDOS
+  // MÉTODOS DE NAVEGACIÓN
   
-  // Para botones "VER RESULTADOS" - navegan a páginas de resultados (no gráficas)
   verResultadosICE(): void {
     if (!this.encuestaSeleccionada) {
       this.showToast('Selecciona una encuesta ICE', 'warning');
@@ -178,7 +213,6 @@ export class InformacionResultadosPage implements OnInit, OnDestroy {
     this.router.navigate(['/iepm-resultados', this.idEmprendedor, this.encuestaSeleccionadaIEPM]);
   }
 
-  // Para botones "VER GRÁFICAS" - navegan a páginas de gráficas
   navegarAGraficaICE(): void {
     if (!this.encuestaSeleccionada) {
       this.showToast('Selecciona una encuesta ICE', 'warning');
@@ -197,7 +231,6 @@ export class InformacionResultadosPage implements OnInit, OnDestroy {
     this.router.navigate(['/grafica-iepm-resultados', this.idEmprendedor, this.encuestaSeleccionadaIEPM]);
   }
 
-  // Para comparaciones (funciona correctamente)
   navegarAComparaciones(): void {
     if (!this.encuestaSeleccionada || !this.encuestaSeleccionadaIEPM) {
       this.showToast('Selecciona encuestas para comparar', 'warning');
@@ -212,6 +245,158 @@ export class InformacionResultadosPage implements OnInit, OnDestroy {
     });
   }
 
+  // MÉTODOS DE IMPRESIÓN Y DATOS PARA VISTA COMPLETA
+  
+  async printPage(): Promise<void> {
+    if (!this.encuestaSeleccionada || !this.encuestaSeleccionadaIEPM) {
+      this.showToast('Selecciona ambas encuestas para imprimir el reporte completo', 'warning');
+      return;
+    }
+
+    try {
+      this.isPrinting = true;
+      
+      // Cargar todos los datos necesarios para la impresión
+      await Promise.all([
+        this.loadResultadosICE(),
+        this.loadResultadosIEPM(),
+        this.loadDatosGraficaICE(),
+        this.loadDatosGraficaIEPM(),
+        this.loadComparaciones()
+      ]);
+
+      // Esperar un momento para que se renderice la vista
+      setTimeout(() => {
+        window.print();
+        this.isPrinting = false;
+      }, 1000);
+      
+    } catch (error) {
+      this.isPrinting = false;
+      this.showToast('Error al generar el reporte', 'danger');
+    }
+  }
+
+  private async loadResultadosICE(): Promise<void> {
+    if (!this.encuestaSeleccionada) return;
+    
+    try {
+      // Mock data temporal - reemplazar con servicio real
+      this.resultadosICE = [
+        {
+          dimension: "Innovación",
+          puntaje: 85,
+          nivel: "Alto",
+          descripcion: "Excelente capacidad de innovación",
+          recomendaciones: ["Continuar desarrollando ideas creativas", "Buscar financiamiento para proyectos"]
+        },
+        {
+          dimension: "Creatividad", 
+          puntaje: 78,
+          nivel: "Medio-Alto",
+          descripcion: "Buena creatividad empresarial",
+          recomendaciones: ["Participar en workshops de creatividad"]
+        },
+        {
+          dimension: "Emprendimiento",
+          puntaje: 92,
+          nivel: "Alto",
+          descripcion: "Fuerte espíritu emprendedor",
+          recomendaciones: ["Considerar mentoría empresarial"]
+        }
+      ];
+    } catch (error) {
+      this.resultadosICE = [];
+    }
+  }
+
+  private async loadResultadosIEPM(): Promise<void> {
+    if (!this.encuestaSeleccionadaIEPM) return;
+    
+    try {
+      // Mock data temporal - reemplazar con servicio real
+      this.resultadosIEPM = [
+        {
+          factor: "Motivación",
+          puntaje: 88,
+          nivel: "Alto",
+          descripcion: "Alta motivación empresarial",
+          recomendaciones: ["Mantener el enfoque en objetivos"]
+        },
+        {
+          factor: "Perseverancia",
+          puntaje: 75,
+          nivel: "Medio-Alto", 
+          descripcion: "Buena capacidad de persistencia",
+          recomendaciones: ["Desarrollar técnicas de resiliencia"]
+        }
+      ];
+    } catch (error) {
+      this.resultadosIEPM = [];
+    }
+  }
+
+  private async loadDatosGraficaICE(): Promise<void> {
+    if (!this.encuestaSeleccionada) return;
+    
+    try {
+      // Mock data temporal - reemplazar con servicio real
+      this.datosGraficaICE = {
+        labels: ["Innovación", "Creatividad", "Emprendimiento"],
+        data: [85, 78, 92],
+        colores: ["#3498db", "#e74c3c", "#2ecc71"]
+      };
+    } catch (error) {
+      this.datosGraficaICE = null;
+    }
+  }
+
+  private async loadDatosGraficaIEPM(): Promise<void> {
+    if (!this.encuestaSeleccionadaIEPM) return;
+    
+    try {
+      // Mock data temporal - reemplazar con servicio real
+      this.datosGraficaIEPM = {
+        labels: ["Motivación", "Perseverancia"],
+        data: [88, 75],
+        colores: ["#9b59b6", "#f39c12"]
+      };
+    } catch (error) {
+      this.datosGraficaIEPM = null;
+    }
+  }
+
+  private async loadComparaciones(): Promise<void> {
+    if (!this.encuestaSeleccionada || !this.encuestaSeleccionadaIEPM) return;
+    
+    try {
+      // Mock data temporal - reemplazar con servicio real
+      this.comparaciones = {
+        correlacion: 0.75,
+        analisis: "Existe una correlación positiva fuerte entre los resultados ICE e IEPM, indicando consistencia en el perfil emprendedor.",
+        recomendacionesIntegradas: [
+          "Aprovechar la alta puntuación en innovación para desarrollar productos únicos",
+          "Combinar creatividad con perseverancia para superar obstáculos",
+          "Usar la motivación alta para mantener el impulso emprendedor"
+        ]
+      };
+    } catch (error) {
+      this.comparaciones = null;
+    }
+  }
+
+  // MÉTODOS AUXILIARES PARA GRÁFICAS
+
+  getBarPercentage(value: number, data: number[]): number {
+    if (!data || data.length === 0) return 0;
+    const max = Math.max(...data);
+    return max > 0 ? (value / max) * 100 : 0;
+  }
+
+  getAbsoluteValue(value: number): number {
+    return Math.abs(value);
+  }
+
   // Navegación general
   navigateToHome(): void {
     this.router.navigate(['/home']);
@@ -219,10 +404,6 @@ export class InformacionResultadosPage implements OnInit, OnDestroy {
 
   navigateBack(): void {
     this.router.navigate(['/ventana-encuestas', this.idEmprendedor]);
-  }
-
-  printPage(): void {
-    window.print();
   }
 
   // Métodos de utilidad

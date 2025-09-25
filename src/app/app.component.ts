@@ -9,7 +9,6 @@ import {
   eye, 
   power, 
   refresh,
-  // Iconos adicionales que podrías necesitar
   homeOutline,
   personOutline,
   settingsOutline,
@@ -36,16 +35,11 @@ export class AppComponent implements OnInit {
   }
 
   ngOnInit() {
-    // Aquí puedes agregar inicializaciones adicionales si es necesario
     console.log('App inicializada correctamente');
   }
 
-  /**
-   * Inicializar todos los iconos de la aplicación
-   */
   private initializeIcons(): void {
     addIcons({
-      // Iconos principales que ya tienes
       'time-outline': timeOutline,
       'document-text-outline': documentTextOutline,
       'add-circle-outline': addCircleOutline,
@@ -53,8 +47,6 @@ export class AppComponent implements OnInit {
       'eye': eye,
       'power': power,
       'refresh': refresh,
-      
-      // Iconos adicionales comunes (opcional)
       'home-outline': homeOutline,
       'person-outline': personOutline,
       'settings-outline': settingsOutline,

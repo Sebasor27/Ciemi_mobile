@@ -12,7 +12,10 @@ import {
   IonCardTitle,
   IonCardContent,
   IonRouterLink,
+  IonButton,
 } from '@ionic/angular/standalone';
+import { addIcons } from 'ionicons';
+import { shieldOutline } from 'ionicons/icons';
 
 @Component({
   selector: 'app-home',
@@ -32,9 +35,16 @@ import {
     IonCardHeader,
     IonCardTitle,
     IonCardContent,
+    IonButton,
   ],
 })
 export class HomePage {
-  constructor() {}
+  constructor() {
+    // Registrar el icono del escudo
+    addIcons({
+      'shield-outline': shieldOutline
+    });
+  }
+  
   logout() {}
 }
