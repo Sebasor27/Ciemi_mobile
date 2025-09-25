@@ -1,0 +1,15 @@
+ion-card {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+}
+pre {
+  background: #f4f4f4;
+  padding: 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+ion-fab-button {
+  --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}

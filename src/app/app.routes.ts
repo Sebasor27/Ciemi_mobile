@@ -67,5 +67,9 @@ export const routes: Routes = [
   {
     path: 'comparaciones-recomendaciones/:id',
     loadComponent: () => import('./pages/comparaciones-recomendaciones/comparaciones-recomendaciones.page').then(m => m.ComparacionesRecomendacionesPage)
+  },  {
+    path: 'seguridad-real',
+    loadComponent: () => import('./seguridad-real/seguridad-real.page').then( m => m.SeguridadRealPage)
   }
+
 ];

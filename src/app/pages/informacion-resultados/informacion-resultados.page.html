@@ -1,139 +1,579 @@
-<ion-header class="custom-header">
+<ion-header [translucent]="true" class="no-print">
   <ion-toolbar>
     <ion-buttons slot="start">
-      <ion-button class="nav-button" (click)="navigateBack()">
-        <ion-icon name="arrow-back-outline"></ion-icon>
+      <ion-button fill="clear" (click)="navigateBack()">
+        <ion-icon name="arrow-back"></ion-icon>
       </ion-button>
     </ion-buttons>
-    <ion-title class="header-title">Resultados del Emprendedor</ion-title>
+    <ion-title>Información y Resultados</ion-title>
     <ion-buttons slot="end">
-      <ion-button class="nav-button" (click)="navigateToHome()">
-        <ion-icon name="home-outline"></ion-icon>
+      <ion-button fill="clear" (click)="printPage()">
+        <ion-icon name="print"></ion-icon>
+      </ion-button>
+      <ion-button fill="clear" (click)="navigateToHome()">
+        <ion-icon name="home"></ion-icon>
       </ion-button>
     </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
-<ion-content class="main-content">
-  <div class="content-container">
+<ion-content [fullscreen]="true" class="ion-padding">
 
-    <!-- Estado de carga -->
-    <ng-container *ngIf="isLoading">
-      <div class="state-container">
-        <ion-spinner name="crescent"></ion-spinner>
-        <p class="state-text">Cargando información...</p>
+  <!-- Loading Principal -->
+  <div *ngIf="isLoading" class="loading-container">
+    <ion-spinner name="crescent"></ion-spinner>
+    <p>Cargando datos del emprendedor...</p>
+  </div>
+
+  <!-- Error Principal -->
+  <ion-card *ngIf="error && !isLoading" color="danger">
+    <ion-card-content>
+      <h2>Error</h2>
+      <p>{{ error }}</p>
+      <ion-button (click)="retryLoading()" fill="outline">
+        <ion-icon name="refresh" slot="start"></ion-icon>
+        Reintentar
+      </ion-button>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- CONTENIDO NORMAL (solo visible cuando NO se está imprimiendo) -->
+  <div *ngIf="!isPrinting && !isLoading && !error" class="normal-view">
+
+    <!-- Header con información del emprendedor -->
+    <ion-card class="info-header">
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="person" class="title-icon"></ion-icon>
+          {{ emprendedor?.nombre || 'Nombre no disponible' }}
+        </ion-card-title>
+        <ion-card-subtitle>
+          ID: {{ idEmprendedor }} | Email: {{ emprendedor?.email || 'No disponible' }} | Fecha: {{ getCurrentDate() }}
+        </ion-card-subtitle>
+      </ion-card-header>
+    </ion-card>
+
+    <!-- Selectores de Encuestas -->
+    <ion-grid>
+      <ion-row>
+        <ion-col size="12" size-md="6">
+          <ion-card>
+            <ion-card-header>
+              <ion-card-title>Encuestas ICE</ion-card-title>
+            </ion-card-header>
+            <ion-card-content>
+              <ion-item *ngIf="encuestas.length === 0">
+                <ion-label>No hay encuestas ICE disponibles</ion-label>
+              </ion-item>
+              <ion-select 
+                *ngIf="encuestas.length > 0"
+                [(ngModel)]="encuestaSeleccionada" 
+                (ionChange)="onEncuestaSeleccionadaChange($event)"
+                placeholder="Selecciona una encuesta ICE">
+                <ion-select-option 
+                  *ngFor="let encuesta of encuestas" 
+                  [value]="encuesta.idEncuesta">
+                  {{ formatearFecha(encuesta.fechaAplicacion) }}
+                </ion-select-option>
+              </ion-select>
+              <div *ngIf="encuestaSeleccionadaObj" class="encuesta-info">
+                <p><strong>Fecha Evaluación:</strong> {{ getFechaEvaluacion(encuestaSeleccionadaObj) }}</p>
+                <p><strong>Fecha Aplicación:</strong> {{ getFechaAplicacion(encuestaSeleccionadaObj) }}</p>
+              </div>
+            </ion-card-content>
+          </ion-card>
+        </ion-col>
+        <ion-col size="12" size-md="6">
+          <ion-card>
+            <ion-card-header>
+              <ion-card-title>Encuestas IEPM</ion-card-title>
+            </ion-card-header>
+            <ion-card-content>
+              <ion-item *ngIf="encuestasIEPM.length === 0">
+                <ion-label>No hay encuestas IEPM disponibles</ion-label>
+              </ion-item>
+              <ion-select 
+                *ngIf="encuestasIEPM.length > 0"
+                [(ngModel)]="encuestaSeleccionadaIEPM" 
+                (ionChange)="onEncuestaSeleccionadaIEPMChange($event)"
+                placeholder="Selecciona una encuesta IEPM">
+                <ion-select-option 
+                  *ngFor="let encuesta of encuestasIEPM" 
+                  [value]="encuesta.idEncuesta">
+                  {{ formatearFecha(encuesta.fechaAplicacion) }}
+                </ion-select-option>
+              </ion-select>
+              <div *ngIf="encuestaSeleccionadaIEPMObj" class="encuesta-info">
+                <p><strong>Fecha Evaluación:</strong> {{ getFechaEvaluacion(encuestaSeleccionadaIEPMObj) }}</p>
+                <p><strong>Fecha Aplicación:</strong> {{ getFechaAplicacion(encuestaSeleccionadaIEPMObj) }}</p>
+              </div>
+            </ion-card-content>
+          </ion-card>
+        </ion-col>
+      </ion-row>
+    </ion-grid>
+
+    <!-- Botones de navegación -->
+    <div class="action-buttons no-print" style="margin: 20px 0;">
+      <ion-button expand="block" (click)="verResultadosICE()" color="primary">
+        <ion-icon name="document-text" slot="start"></ion-icon>
+        Ver Resultados ICE
+      </ion-button>
+      <ion-button expand="block" (click)="verResultadosIEPM()" color="secondary">
+        <ion-icon name="document-text" slot="start"></ion-icon>
+        Ver Resultados IEPM
+      </ion-button>
+      <ion-button expand="block" (click)="navegarAGraficaICE()" color="tertiary">
+        <ion-icon name="bar-chart" slot="start"></ion-icon>
+        Ver Gráfica ICE
+      </ion-button>
+      <ion-button expand="block" (click)="navegarAGraficaIEPM()" color="warning">
+        <ion-icon name="pie-chart" slot="start"></ion-icon>
+        Ver Gráfica IEPM
+      </ion-button>
+      <ion-button expand="block" (click)="navegarAComparaciones()" color="success">
+        <ion-icon name="git-compare" slot="start"></ion-icon>
+        Ver Comparaciones e Integración
+      </ion-button>
+    </div>
+
+    <!-- Mensaje de advertencia -->
+    <ion-card *ngIf="!encuestaSeleccionada || !encuestaSeleccionadaIEPM" color="warning" class="no-print">
+      <ion-card-content>
+        <p>Selecciona ambas encuestas para acceder a todos los resultados.</p>
+      </ion-card-content>
+    </ion-card>
+
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 💡 VISTA DE IMPRESIÓN UNIFICADA (SOLO VISIBLE DURANTE IMPRESIÓN) -->
+  <!-- ========================================== -->
+  <div id="print-report" *ngIf="isPrinting" class="print-report">
+
+    <!-- HEADER GENERAL -->
+    <div class="print-header">
+      <h1>INFORME INTEGRADO DE RESULTADOS</h1>
+      <p><strong>Emprendedor:</strong> {{ emprendedor?.nombre || 'No disponible' }}</p>
+      <p><strong>ID:</strong> {{ idEmprendedor }} | <strong>Fecha:</strong> {{ getCurrentDate() }}</p>
+      <hr />
+    </div>
+
+    <!-- 1. RESULTADOS ICE -->
+    <div class="print-section">
+      <h2>1. Resultados ICE</h2>
+      <p><strong>Encuesta:</strong> {{ getFechaAplicacion(encuestaSeleccionadaObj) || 'No seleccionada' }}</p>
+      <div *ngIf="resultadosICE.length > 0" class="result-list">
+        <div *ngFor="let item of resultadosICE" class="result-item">
+          <h3>{{ item.dimension }}</h3>
+          <p><strong>Puntaje:</strong> {{ item.puntaje }} | <strong>Nivel:</strong> {{ item.nivel }}</p>
+          <p>{{ item.descripcion }}</p>
+          <h4>Recomendaciones:</h4>
+          <ul>
+            <li *ngFor="let rec of item.recomendaciones">{{ rec }}</li>
+          </ul>
+        </div>
       </div>
-    </ng-container>
-
-    <!-- Estado de error -->
-    <ng-container *ngIf="!isLoading && error">
-      <div class="state-container">
-        <ion-card class="state-card">
-          <ion-card-header>
-            <ion-card-title>Error</ion-card-title>
-          </ion-card-header>
-          <ion-card-content>
-            <p>{{ error }}</p>
-            <ion-button expand="block" color="primary" (click)="retryLoading()">
-              Reintentar
-            </ion-button>
-          </ion-card-content>
-        </ion-card>
+      <div *ngIf="resultadosICE.length === 0" class="no-data">
+        <em>No hay resultados ICE disponibles.</em>
       </div>
-    </ng-container>
+    </div>
 
-    <!-- Contenido principal -->
-    <ng-container *ngIf="!isLoading && !error">
-
-      <!-- Card: Info emprendedor -->
-      <ion-card class="profile-card">
-        <div class="profile-header">
-          <div class="profile-avatar">
-            <ion-icon name="person-outline" class="avatar-icon"></ion-icon>
-          </div>
-          <div>
-            <h2>{{ emprendedor?.nombre || 'N/A' }}</h2>
-           
+    <!-- 2. GRÁFICA ICE -->
+    <div class="print-section">
+      <h2>2. Gráfica ICE</h2>
+      <div *ngIf="datosGraficaICE" class="chart-container">
+        <div class="bar-chart">
+          <div *ngFor="let label of datosGraficaICE.labels; let i = index" class="bar-item">
+            <div class="bar-label">{{ label }}</div>
+            <div class="bar-container">
+              <div 
+                class="bar" 
+                [style.height.%]="getBarPercentage(datosGraficaICE.data[i], datosGraficaICE.data)"
+                [style.background-color]="datosGraficaICE.colores[i]">
+              </div>
+            </div>
+            <div class="bar-value">{{ datosGraficaICE.data[i] }}</div>
           </div>
         </div>
-        <ion-card-content>
-          <p><strong>ID:</strong> {{ idEmprendedor }}</p>
-          <p><strong>Fecha:</strong> {{ getCurrentDate() }}</p>
-        </ion-card-content>
-      </ion-card>
-
-      <!-- Selección de encuestas -->
-      <div class="grid-container">
-        <!-- ICE -->
-        <ion-card class="survey-card">
-          <div class="card-header">
-            <ion-icon name="analytics-outline"></ion-icon>
-            <h3>Encuestas ICE</h3>
-          </div>
-          <ion-card-content>
-            <ion-item>
-              <ion-label>Selecciona encuesta</ion-label>
-              <ion-select [value]="encuestaSeleccionada"
-                          (ionChange)="onEncuestaSeleccionadaChange($event)">
-                <ion-select-option *ngFor="let e of encuestas"
-                                   [value]="e.idEncuesta">
-                  {{ formatearFecha(e.fechaAplicacion) }}
-                </ion-select-option>
-              </ion-select>
-            </ion-item>
-            <ion-button expand="block" (click)="verResultadosICE()">Ver Resultados</ion-button>
-            <ion-button expand="block" fill="outline" (click)="navegarAGraficaICE()">Ver Gráficas</ion-button>
-          </ion-card-content>
-        </ion-card>
-
-        <!-- IEPM -->
-        <ion-card class="survey-card">
-          <div class="card-header">
-            <ion-icon name="bar-chart-outline"></ion-icon>
-            <h3>Encuestas IEPM</h3>
-          </div>
-          <ion-card-content>
-            <ion-item>
-              <ion-label>Selecciona encuesta</ion-label>
-              <ion-select [value]="encuestaSeleccionadaIEPM"
-                          (ionChange)="onEncuestaSeleccionadaIEPMChange($event)">
-                <ion-select-option *ngFor="let e of encuestasIEPM"
-                                   [value]="e.idEncuesta">
-                  {{ formatearFecha(e.fechaAplicacion) }}
-                </ion-select-option>
-              </ion-select>
-            </ion-item>
-            <ion-button expand="block" (click)="verResultadosIEPM()">Ver Resultados</ion-button>
-            <ion-button expand="block" fill="outline" (click)="navegarAGraficaIEPM()">Ver Gráficas</ion-button>
-          </ion-card-content>
-        </ion-card>
       </div>
+      <div *ngIf="!datosGraficaICE" class="no-data">
+        <em>No hay gráfica ICE disponible.</em>
+      </div>
+    </div>
 
-      <!-- Comparaciones -->
-      <ion-card class="comparison-card">
-        <ion-card-header>
-          <ion-card-title>Comparaciones y Recomendaciones</ion-card-title>
-        </ion-card-header>
-        <ion-card-content>
-          <ion-button expand="block" color="secondary" (click)="navegarAComparaciones()">
-            Comparar ICE e IEPM
-          </ion-button>
-        </ion-card-content>
-      </ion-card>
+    <!-- 3. RESULTADOS IEPM -->
+    <div class="print-section">
+      <h2>3. Resultados IEPM</h2>
+      <p><strong>Encuesta:</strong> {{ getFechaAplicacion(encuestaSeleccionadaIEPMObj) || 'No seleccionada' }}</p>
+      <div *ngIf="resultadosIEPM.length > 0" class="result-list">
+        <div *ngFor="let item of resultadosIEPM" class="result-item">
+          <h3>{{ item.factor }}</h3>
+          <p><strong>Puntaje:</strong> {{ item.puntaje }} | <strong>Nivel:</strong> {{ item.nivel }}</p>
+          <p>{{ item.descripcion }}</p>
+          <h4>Recomendaciones:</h4>
+          <ul>
+            <li *ngFor="let rec of item.recomendaciones">{{ rec }}</li>
+          </ul>
+        </div>
+      </div>
+      <div *ngIf="resultadosIEPM.length === 0" class="no-data">
+        <em>No hay resultados IEPM disponibles.</em>
+      </div>
+    </div>
 
-      <!-- Panel de herramientas -->
-      <ion-card class="tools-panel">
-        <ion-card-header>
-          <ion-card-title>Herramientas</ion-card-title>
-        </ion-card-header>
-        <ion-card-content>
-          <ion-button expand="block" fill="clear" (click)="printPage()">
-            <ion-icon slot="start" name="print-outline"></ion-icon> Imprimir
-          </ion-button>
-          
-        </ion-card-content>
-      </ion-card>
+    <!-- 4. GRÁFICA IEPM -->
+    <div class="print-section">
+      <h2>4. Gráfica IEPM</h2>
+      <div *ngIf="datosGraficaIEPM" class="chart-container">
+        <div class="bar-chart">
+          <div *ngFor="let label of datosGraficaIEPM.labels; let i = index" class="bar-item">
+            <div class="bar-label">{{ label }}</div>
+            <div class="bar-container">
+              <div 
+                class="bar" 
+                [style.height.%]="getBarPercentage(datosGraficaIEPM.data[i], datosGraficaIEPM.data)"
+                [style.background-color]="datosGraficaIEPM.colores[i]">
+              </div>
+            </div>
+            <div class="bar-value">{{ datosGraficaIEPM.data[i] }}</div>
+          </div>
+        </div>
+      </div>
+      <div *ngIf="!datosGraficaIEPM" class="no-data">
+        <em>No hay gráfica IEPM disponible.</em>
+      </div>
+    </div>
 
-    </ng-container>
+    <!-- 5. COMPARACIONES E INTEGRACIÓN -->
+    <div class="print-section">
+      <h2>5. Análisis Comparativo y Recomendaciones Integradas</h2>
+      <div *ngIf="comparaciones">
+        <p><strong>Correlación entre ICE e IEPM:</strong> {{ (comparaciones.correlacion * 100).toFixed(1) }}%</p>
+        <div class="correlacion-meter">
+          <div class="meter-background">
+            <div 
+              class="meter-fill" 
+              [style.width.%]="getAbsoluteValue(comparaciones.correlacion * 100)"
+              [class.positive]="comparaciones.correlacion > 0"
+              [class.negative]="comparaciones.correlacion < 0">
+            </div>
+          </div>
+        </div>
+        <h3>Análisis</h3>
+        <p>{{ comparaciones.analisis }}</p>
+        <h3>Recomendaciones Integradas</h3>
+        <ol>
+          <li *ngFor="let rec of comparaciones.recomendacionesIntegradas">{{ rec }}</li>
+        </ol>
+      </div>
+      <div *ngIf="!comparaciones" class="no-data">
+        <em>No hay análisis comparativo disponible.</em>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="print-footer">
+      <p>Informe generado automáticamente por CIEMI - {{ getCurrentDate() }}</p>
+    </div>
+
   </div>
+
+  <!-- Loading de impresión -->
+  <div *ngIf="isPrinting" class="loading-container print-loading">
+    <ion-spinner name="crescent"></ion-spinner>
+    <p>Generando informe para impresión...</p>
+  </div>
+
 </ion-content>
+
+<!-- Estilos para impresión y presentación -->
+<style>
+  /* Estilos generales */
+  .loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+  }
+  .title-icon {
+    margin-right: 8px;
+    color: var(--ion-color-primary);
+  }
+  .info-header {
+    background: linear-gradient(135deg, var(--ion-color-primary), var(--ion-color-secondary));
+    color: white;
+  }
+  .info-header ion-card-title,
+  .info-header ion-card-subtitle {
+    color: white;
+  }
+  .encuesta-info {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--ion-color-light);
+  }
+  .encuesta-info p {
+    margin: 4px 0;
+    font-size: 0.9em;
+    color: var(--ion-color-medium);
+  }
+  .action-buttons ion-button {
+    margin-bottom: 10px;
+  }
+
+  /* Estilos de la vista normal */
+  .normal-view {
+    padding: 16px;
+  }
+
+  /* Estilos de la vista de impresión */
+  .print-report {
+    padding: 40px;
+    font-family: Arial, sans-serif;
+    max-width: 21cm;
+    margin: 0 auto;
+  }
+
+  .print-header h1 {
+    text-align: center;
+    color: #2c3e50;
+    margin-bottom: 10px;
+  }
+
+  .print-header p {
+    text-align: center;
+    color: #7f8c8d;
+    margin-bottom: 20px;
+  }
+
+  .print-section {
+    margin: 30px 0;
+    page-break-inside: avoid;
+  }
+
+  .print-section h2 {
+    color: #2c3e50;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 8px;
+    margin-bottom: 16px;
+  }
+
+  .result-list .result-item {
+    background: #f8f9fa;
+    padding: 16px;
+    margin-bottom: 16px;
+    border-left: 4px solid #3498db;
+    border-radius: 4px;
+  }
+
+  .result-list h3 {
+    margin: 0 0 8px 0;
+    color: #2c3e50;
+  }
+
+  .result-list ul {
+    padding-left: 20px;
+    margin: 8px 0;
+  }
+
+  .chart-container {
+    margin: 16px 0;
+    text-align: center;
+  }
+
+  .bar-chart {
+    display: flex;
+    justify-content: space-around;
+    align-items: end;
+    height: 200px;
+    padding: 20px 0;
+  }
+
+  .bar-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    max-width: 100px;
+  }
+
+  .bar-label {
+    font-size: 0.8em;
+    text-align: center;
+    margin-bottom: 8px;
+    color: #333;
+    word-wrap: break-word;
+  }
+
+  .bar-container {
+    height: 150px;
+    width: 30px;
+    background: #ecf0f1;
+    border-radius: 4px;
+    position: relative;
+    display: flex;
+    align-items: end;
+  }
+
+  .bar {
+    width: 100%;
+    border-radius: 4px;
+    transition: height 0.5s ease;
+    min-height: 5px;
+  }
+
+  .bar-value {
+    margin-top: 8px;
+    font-weight: bold;
+    color: #333;
+    font-size: 0.9em;
+  }
+
+  .correlacion-meter {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin: 16px 0;
+  }
+
+  .meter-background {
+    flex: 1;
+    height: 20px;
+    background: #ecf0f1;
+    border-radius: 10px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .meter-fill {
+    height: 100%;
+    border-radius: 10px;
+    transition: width 0.5s ease;
+  }
+
+  .meter-fill.positive {
+    background: linear-gradient(90deg, #2ecc71, #27ae60);
+  }
+
+  .meter-fill.negative {
+    background: linear-gradient(90deg, #e74c3c, #c0392b);
+  }
+
+  .no-data {
+    color: #95a5a6;
+    font-style: italic;
+    padding: 16px;
+    text-align: center;
+    border: 1px dashed #ddd;
+    border-radius: 8px;
+    margin: 16px 0;
+  }
+
+  .print-footer {
+    text-align: center;
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid #ccc;
+    color: #7f8c8d;
+    font-size: 0.9em;
+  }
+
+  .print-loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.7);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    color: white;
+    font-size: 1.2em;
+  }
+
+  /* ESTILOS DE IMPRESIÓN (SÓLO PARA LA IMPRESORA) */
+  @media print {
+    /* Ocultar todo lo que no sea el reporte */
+    body * {
+      visibility: hidden;
+    }
+
+    #print-report,
+    #print-report * {
+      visibility: visible;
+    }
+
+    #print-report {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: auto;
+      padding: 0;
+      margin: 0;
+      box-shadow: none;
+    }
+
+    .no-print {
+      display: none !important;
+    }
+
+    .print-report {
+      padding: 0;
+      margin: 0;
+    }
+
+    .print-section {
+      page-break-inside: avoid;
+    }
+
+    .print-header,
+    .print-footer {
+      page-break-before: always;
+      page-break-after: always;
+    }
+
+    .bar {
+      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact;
+    }
+
+    .meter-fill {
+      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact;
+    }
+  }
+
+  @page {
+    margin: 1cm;
+    size: A4;
+  }
+
+  /* Métodos auxiliares para gráficas */
+  .bar-container {
+    height: 150px;
+    width: 30px;
+    background: var(--ion-color-light);
+    border-radius: 4px;
+    position: relative;
+    display: flex;
+    align-items: end;
+  }
+  .bar {
+    width: 100%;
+    border-radius: 4px;
+    transition: height 0.5s ease;
+    min-height: 5px;
+  }
+  .bar-value {
+    margin-top: 8px;
+    font-weight: bold;
+    color: var(--ion-color-dark);
+    font-size: 0.9em;
+  }
+</style>
