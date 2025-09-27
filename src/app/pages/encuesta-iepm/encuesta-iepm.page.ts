@@ -148,7 +148,7 @@ idEmprendedor: string | null = null;
   }
 
   volver() {
-    this.router.navigate(['/ventanaencuestas', this.idEmprendedor]);
-  }
+     this.router.navigate(['/ventana-encuestas', this.idEmprendedor]);
+    }
   
 }

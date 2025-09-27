@@ -2,8 +2,11 @@
   <ion-toolbar>
     <ion-title>Encuesta IEPM</ion-title>
       <ion-buttons slot="start">
-      <ion-back-button defaultHref="/ventana-encuestas/:id"></ion-back-button>
-    </ion-buttons>
+  <ion-button (click)="volver()">
+    <ion-icon name="arrow-back"></ion-icon>
+  </ion-button>
+</ion-buttons>
+
   </ion-toolbar>
 </ion-header>
 

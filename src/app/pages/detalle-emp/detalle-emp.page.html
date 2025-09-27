@@ -63,6 +63,7 @@
             <ion-label position="stacked">Nombres y Apellidos</ion-label>
             <ion-input
               *ngIf="isEditing"
+              [disabled]="false"
               [(ngModel)]="editedEmprendedor.nombre"
               name="nombre"
               (ionChange)="handleInputChange($event, 'nombre')"
@@ -238,6 +239,7 @@
             <ion-label position="stacked">Año de Creación</ion-label>
             <ion-input
               *ngIf="isEditing"
+              [disabled]="true"
               type="number"
               [(ngModel)]="editedEmprendedor.anoCreacionEmpresa"
               name="anoCreacionEmpresa"
@@ -309,6 +311,7 @@
             <ion-label position="stacked">Cédula</ion-label>
             <ion-input
               *ngIf="isEditing"
+              [disabled]="true"
               [(ngModel)]="editedEmprendedor.cedula"
               name="cedula"
               (ionChange)="handleInputChange($event, 'cedula')"

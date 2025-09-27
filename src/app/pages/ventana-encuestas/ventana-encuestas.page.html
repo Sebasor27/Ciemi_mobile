@@ -1,5 +1,8 @@
 <ion-header class="custom-header">
-  <ion-toolbar class="header-toolbar">
+  <ion-toolbar class="header-toolbar" color="primary">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/detalle-emp"></ion-back-button>
+    </ion-buttons>
     <ion-title class="header-title">
       <div class="university-header">
         <h1>UNIVERSIDAD UNIANDES</h1>
@@ -35,21 +38,14 @@
             </div>
           </div>
         </div>
-        
+
         <div class="survey-actions">
-          <ion-button 
-            class="primary-button" 
+          <ion-button
+            class="primary-button"
             (click)="handleSurveySelection('ice')"
           >
             <ion-icon name="play-outline" slot="start"></ion-icon>
             INICIAR
-          </ion-button>
-          <ion-button 
-            class="secondary-button" 
-            fill="outline"
-          >
-            <ion-icon name="information-circle-outline" slot="start"></ion-icon>
-            VER DETALLES
           </ion-button>
         </div>
       </ion-card-content>
@@ -73,90 +69,70 @@
             </div>
           </div>
         </div>
-        
+
         <div class="survey-actions">
-          <ion-button 
-            class="primary-button" 
+          <ion-button
+            class="primary-button"
             (click)="handleSurveySelection('iepm')"
           >
             <ion-icon name="play-outline" slot="start"></ion-icon>
             INICIAR
-          </ion-button>
-          <ion-button 
-            class="secondary-button" 
-            fill="outline"
-          >
-            <ion-icon name="information-circle-outline" slot="start"></ion-icon>
-            VER DETALLES
           </ion-button>
         </div>
       </ion-card-content>
     </ion-card>
 
     <!-- Botón de Resultados -->
-    <ion-button 
-      class="results-button" 
-      expand="block"
-      (click)="goToResults()"
-    >
+    <ion-button class="results-button" expand="block" (click)="goToResults()">
       <ion-icon name="checkmark-circle-outline" slot="start"></ion-icon>
       REVISAR RESULTADOS
     </ion-button>
 
-<ion-button
-  (click)="goToDetails()"
-  fill="outline"
-  color="primary"
-  expand="block"
->
-  <ion-icon name="arrow-back-outline" slot="start"></ion-icon>
-  Regresar a Detalles
-</ion-button>
+    <ion-button
+      (click)="goToDetails()"
+      fill="outline"
+      color="primary"
+      expand="block"
+    >
+      <ion-icon name="arrow-back-outline" slot="start"></ion-icon>
+      Regresar a Detalles
+    </ion-button>
 
 
-
-    <!-- Footer -->
-    <div class="footer">
-      <span>UNIANDES • UNIANDES • UNIANDES • UNIANDES</span>
-    </div>
+   <!-- Modal de Confirmación CORREGIDO -->
+    <ion-modal
+      [isOpen]="showModal"
+      (didDismiss)="onModalDidDismiss()"
+      backdropDismiss="false"
+    >
+      <ng-template>
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3>Confirmación</h3>
+          </div>
+          <div class="modal-body">
+            <p>
+              ¿Estás seguro que deseas comenzar la encuesta {{ selectedSurvey
+              === 'ice' ? 'ICE' : 'IEPM' }}?
+            </p>
+            <p>
+              Una vez iniciada, deberás completarla para obtener resultados.
+            </p>
+          </div>
+          <div class="modal-footer">
+            <ion-button
+              class="cancel-button"
+              fill="outline"
+              (click)="closeModal()"
+            >
+              CANCELAR
+            </ion-button>
+            <ion-button class="confirm-button" (click)="proceedToSurvey()">
+              CONFIRMAR
+            </ion-button>
+          </div>
+        </div>
+      </ng-template>
+    </ion-modal>
   </div>
 </ion-content>
-
-<!-- Modal de Confirmación CORREGIDO -->
-<ion-modal 
-  [isOpen]="showModal" 
-  (didDismiss)="onModalDidDismiss()"
-  backdropDismiss="false"
->
-  <ng-template>
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3>Confirmación</h3>
-      </div>
-      <div class="modal-body">
-        <p>
-          ¿Estás seguro que deseas comenzar la encuesta 
-          {{ selectedSurvey === 'ice' ? 'ICE' : 'IEPM' }}?
-        </p>
-        <p>
-          Una vez iniciada, deberás completarla para obtener resultados.
-        </p>
-      </div>
-      <div class="modal-footer">
-        <ion-button 
-          class="cancel-button" 
-          fill="outline" 
-          (click)="closeModal()"
-        >
-          CANCELAR
-        </ion-button>
-        <ion-button 
-          class="confirm-button" 
-          (click)="proceedToSurvey()"
-        >
-          CONFIRMAR
-        </ion-button>
-      </div>
-    </div>
-  </ng-template>
-</ion-modal>
