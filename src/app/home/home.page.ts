@@ -16,6 +16,7 @@ import {
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { shieldOutline } from 'ionicons/icons';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-home',
@@ -39,12 +40,18 @@ import { shieldOutline } from 'ionicons/icons';
   ],
 })
 export class HomePage {
-  constructor() {
+  constructor(private router: Router) {
     // Registrar el icono del escudo
     addIcons({
       'shield-outline': shieldOutline
     });
   }
   
-  logout() {}
+  logout() {
+    localStorage.removeItem('token'); // elimina token
+     this.router.navigate(['/login'], {
+    replaceUrl: true,         // reemplaza la página actual
+    skipLocationChange: true, // evita efecto de historial
+  });
+}
 }

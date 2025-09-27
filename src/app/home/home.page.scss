@@ -106,3 +106,23 @@
     }
   }
 }
+.logout-button {
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-size: 1.5rem; /* tamaño del icono */
+  cursor: pointer;
+  
+  position: absolute;
+  right: 10px;   /* ahora está al lado izquierdo */
+  top: 50%;
+  transform: translateY(-50%);
+  
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+
+  transition: none !important;
+  animation: none !important;
+}
