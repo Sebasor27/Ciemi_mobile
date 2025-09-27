@@ -2,178 +2,136 @@
   <ion-header>
     <ion-toolbar>
       <ion-title>Registro Emprendedor</ion-title>
-        <ion-buttons slot="start">
-      <ion-back-button defaultHref="/home"></ion-back-button>
-    </ion-buttons>
+      <ion-buttons slot="start">
+        <ion-back-button defaultHref="/home"></ion-back-button>
+      </ion-buttons>
     </ion-toolbar>
   </ion-header>
 
-  <form (ngSubmit)="registrarEmprendedor()" style="padding: 1rem">
+  <form #form="ngForm" (ngSubmit)="registrarEmprendedor()" style="padding: 1rem">
+    
+    <!-- Nombre -->
     <ion-item>
       <ion-label position="floating">Nombre</ion-label>
-      <ion-input
-        [(ngModel)]="emprendedor.nombre"
-        name="nombre"
-        required
-      ></ion-input>
+      <ion-input [(ngModel)]="emprendedor.nombre" name="nombre" required></ion-input>
     </ion-item>
+    <ion-note color="danger" *ngIf="errores.nombre">{{ errores.nombre[0] }}</ion-note>
 
+    <!-- Edad -->
     <ion-item>
       <ion-label position="floating">Edad</ion-label>
-      <ion-input
-        [(ngModel)]="emprendedor.edad"
-        name="edad"
-        required
-      ></ion-input>
+      <ion-input type="number" [(ngModel)]="emprendedor.edad" name="edad" required></ion-input>
     </ion-item>
+    <ion-note color="danger" *ngIf="errores.edad">{{ errores.edad[0] }}</ion-note>
 
+    <!-- Nivel de Estudio -->
     <ion-item>
-      <ion-label position="floating">Nivel de Estudio</ion-label>
-      <ion-select
-        [(ngModel)]="emprendedor.nivelEstudio"
-        name="nivelEstudio"
-        required
-      >
-        <ion-select-option
-          *ngFor="let nivel of opcionesNivelEstudio"
-          [value]="nivel"
-          >{{ nivel }}</ion-select-option
-        >
+      <ion-label position="stacked">Nivel de Estudio</ion-label>
+      <ion-select [(ngModel)]="emprendedor.nivelEstudio" name="nivelEstudio" required interface="popover">
+        <ion-select-option *ngFor="let nivel of opcionesNivelEstudio" [value]="nivel">{{ nivel }}</ion-select-option>
       </ion-select>
     </ion-item>
+    <ion-note color="danger" *ngIf="errores.nivelEstudio">{{ errores.nivelEstudio[0] }}</ion-note>
 
+    <!-- Trabajo en Relación de Dependencia -->
     <ion-item>
       <ion-label>Trabajo en relación dependencia</ion-label>
-      <ion-checkbox
-        slot="end"
-        [(ngModel)]="emprendedor.trabajoRelacionDependencia"
-        name="trabajoRelacionDependencia"
-      ></ion-checkbox>
+      <ion-checkbox slot="end" [(ngModel)]="emprendedor.trabajoRelacionDependencia" name="trabajoRelacionDependencia"></ion-checkbox>
     </ion-item>
 
+    <!-- Sueldo Mensual -->
     <ion-item>
-      <ion-label position="floating">Sueldo Mensual</ion-label>
-      <ion-select
-        [(ngModel)]="emprendedor.sueldoMensual"
-        name="sueldoMensual"
-        required
-      >
-        <ion-select-option
-          *ngFor="let sueldo of opcionesRangoSueldo"
-          [value]="sueldo"
-          >{{ sueldo }}</ion-select-option
-        >
+      <ion-label position="stacked">Sueldo Mensual</ion-label>
+      <ion-select [(ngModel)]="emprendedor.sueldoMensual" name="sueldoMensual" required interface="popover">
+        <ion-select-option *ngFor="let sueldo of opcionesRangoSueldo" [value]="sueldo">{{ sueldo }}</ion-select-option>
       </ion-select>
     </ion-item>
+    <ion-note color="danger" *ngIf="errores.sueldoMensual">{{ errores.sueldoMensual[0] }}</ion-note>
 
+    <!-- RUC -->
     <ion-item>
       <ion-label position="floating">RUC</ion-label>
       <ion-input [(ngModel)]="emprendedor.ruc" name="ruc"></ion-input>
     </ion-item>
+    <ion-note color="danger" *ngIf="errores.ruc">{{ errores.ruc[0] }}</ion-note>
 
+    <!-- Empleados Hombres -->
     <ion-item>
       <ion-label position="floating">Empleados Hombres</ion-label>
-      <ion-input
-        type="number"
-        [(ngModel)]="emprendedor.empleadosHombres"
-        name="empleadosHombres"
-        required
-      ></ion-input>
+      <ion-input type="number" [(ngModel)]="emprendedor.empleadosHombres" name="empleadosHombres" required></ion-input>
     </ion-item>
+    <ion-note color="danger" *ngIf="errores.empleadosHombres">{{ errores.empleadosHombres[0] }}</ion-note>
 
+    <!-- Empleados Mujeres -->
     <ion-item>
       <ion-label position="floating">Empleados Mujeres</ion-label>
-      <ion-input
-        type="number"
-        [(ngModel)]="emprendedor.empleadosMujeres"
-        name="empleadosMujeres"
-        required
-      ></ion-input>
+      <ion-input type="number" [(ngModel)]="emprendedor.empleadosMujeres" name="empleadosMujeres" required></ion-input>
     </ion-item>
+    <ion-note color="danger" *ngIf="errores.empleadosMujeres">{{ errores.empleadosMujeres[0] }}</ion-note>
 
+    <!-- Rango Edad Empleados -->
     <ion-item>
-      <ion-label position="floating">Rango Edad Empleados</ion-label>
-      <ion-select
-        [(ngModel)]="emprendedor.rangoEdadEmpleados"
-        name="rangoEdadEmpleados"
-      >
-        <ion-select-option
-          *ngFor="let rango of opcionesRangoEdad"
-          [value]="rango"
-          >{{ rango }}</ion-select-option
-        >
+      <ion-label position="stacked">Rango Edad Empleados</ion-label>
+      <ion-select [(ngModel)]="emprendedor.rangoEdadEmpleados" name="rangoEdadEmpleados" interface="popover">
+        <ion-select-option *ngFor="let rango of opcionesRangoEdad" [value]="rango">{{ rango }}</ion-select-option>
       </ion-select>
     </ion-item>
+    <ion-note color="danger" *ngIf="errores.rangoEdadEmpleados">{{ errores.rangoEdadEmpleados[0] }}</ion-note>
 
+    <!-- Tipo de Empresa -->
     <ion-item>
-      <ion-label position="floating">Tipo de Empresa</ion-label>
-      <ion-select
-        [(ngModel)]="emprendedor.tipoEmpresa"
-        name="tipoEmpresa"
-        required
-      >
-        <ion-select-option
-          *ngFor="let tipo of opcionesTipoEmpresa"
-          [value]="tipo"
-          >{{ tipo }}</ion-select-option
-        >
+      <ion-label position="stacked">Tipo de Empresa</ion-label>
+      <ion-select [(ngModel)]="emprendedor.tipoEmpresa" name="tipoEmpresa" required interface="popover">
+        <ion-select-option *ngFor="let tipo of opcionesTipoEmpresa" [value]="tipo">{{ tipo }}</ion-select-option>
       </ion-select>
     </ion-item>
+    <ion-note color="danger" *ngIf="errores.tipoEmpresa">{{ errores.tipoEmpresa[0] }}</ion-note>
 
+    <!-- Año de Creación -->
     <ion-item>
       <ion-label position="floating">Año de Creación</ion-label>
-      <ion-input
-        type="number"
-        [(ngModel)]="emprendedor.anoCreacionEmpresa"
-        name="anoCreacionEmpresa"
-        required
-      ></ion-input>
+      <ion-input type="number" [(ngModel)]="emprendedor.anoCreacionEmpresa" name="anoCreacionEmpresa" required></ion-input>
     </ion-item>
+    <ion-note color="danger" *ngIf="errores.anoCreacionEmpresa">{{ errores.anoCreacionEmpresa[0] }}</ion-note>
 
+    <!-- Dirección -->
     <ion-item>
       <ion-label position="floating">Dirección</ion-label>
-      <ion-input
-        [(ngModel)]="emprendedor.direccion"
-        name="direccion"
-        required
-      ></ion-input>
+      <ion-input [(ngModel)]="emprendedor.direccion" name="direccion" required></ion-input>
     </ion-item>
+    <ion-note color="danger" *ngIf="errores.direccion">{{ errores.direccion[0] }}</ion-note>
 
+    <!-- Teléfono -->
     <ion-item>
       <ion-label position="floating">Teléfono</ion-label>
       <ion-input [(ngModel)]="emprendedor.telefono" name="telefono"></ion-input>
     </ion-item>
+    <ion-note color="danger" *ngIf="errores.telefono">{{ errores.telefono[0] }}</ion-note>
 
+    <!-- Celular -->
     <ion-item>
       <ion-label position="floating">Celular</ion-label>
-      <ion-input
-        [(ngModel)]="emprendedor.celular"
-        name="celular"
-        required
-      ></ion-input>
+      <ion-input [(ngModel)]="emprendedor.celular" name="celular" required></ion-input>
     </ion-item>
+    <ion-note color="danger" *ngIf="errores.celular">{{ errores.celular[0] }}</ion-note>
 
+    <!-- Correo -->
     <ion-item>
       <ion-label position="floating">Correo</ion-label>
-      <ion-input
-        type="email"
-        [(ngModel)]="emprendedor.correo"
-        name="correo"
-        required
-      ></ion-input>
+      <ion-input type="email" [(ngModel)]="emprendedor.correo" name="correo" required></ion-input>
     </ion-item>
+    <ion-note color="danger" *ngIf="errores.correo">{{ errores.correo[0] }}</ion-note>
 
+    <!-- Cédula -->
     <ion-item>
       <ion-label position="floating">Cédula</ion-label>
-      <ion-input
-        [(ngModel)]="emprendedor.cedula"
-        name="cedula"
-        required
-      ></ion-input>
+      <ion-input [(ngModel)]="emprendedor.cedula" name="cedula" required></ion-input>
     </ion-item>
+    <ion-note color="danger" *ngIf="errores.cedula">{{ errores.cedula[0] }}</ion-note>
 
     <div style="margin-top: 1rem; text-align: center">
-      <ion-button expand="block" type="submit">Registrar</ion-button>
+      <ion-button expand="block" type="submit" [disabled]="!form.valid">Registrar</ion-button>
     </div>
   </form>
 </ion-content>
+

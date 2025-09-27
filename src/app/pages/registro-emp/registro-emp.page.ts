@@ -1,11 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { IonicModule } from '@ionic/angular';
+import { IonicModule, ToastController } from '@ionic/angular';
 import { ApiService } from 'src/app/Service/api.service';
 import { AuthService } from 'src/app/Service/auth.service';
 import { Router } from '@angular/router';
-import { ToastController } from '@ionic/angular';
 
 @Component({
   selector: 'app-registro-emp',
@@ -26,7 +25,7 @@ export class RegistroEmpPage implements OnInit {
     empleadosMujeres: 0,
     rangoEdadEmpleados: '',
     tipoEmpresa: '',
-    anoCreacionEmpresa: 2020,
+    anoCreacionEmpresa: new Date().getFullYear(),
     direccion: '',
     telefono: '',
     celular: '',
@@ -36,45 +35,21 @@ export class RegistroEmpPage implements OnInit {
     estado: true,
   };
 
+  errores: any = {}; // Aquí guardaremos errores por campo
+
   opcionesRangoEdad = ['Ninguno', '18-25', '26-35', '36-45', '46-59', '60+'];
   opcionesRangoSueldo = ['0-460', '460-750', '750-1000', '1000+'];
   opcionesNivelEstudio = [
-    'Primaria',
-    'Secundaria',
-    'Bachillerato',
-    'Licenciatura',
-    'Técnico',
-    'Tecnológico',
-    'Universitario',
-    'Postgrado',
-    'Maestría',
-    'Doctorado',
-    'Especialización',
-    'Certificación Profesional',
-    'Formación Profesional',
-    'Educación Preescolar',
-    'Educación Media Superior',
-    'Ninguno',
+    'Primaria', 'Secundaria', 'Bachillerato', 'Licenciatura', 'Técnico', 
+    'Tecnológico', 'Universitario', 'Postgrado', 'Maestría', 'Doctorado', 
+    'Especialización', 'Certificación Profesional', 'Formación Profesional', 
+    'Educación Preescolar', 'Educación Media Superior', 'Ninguno',
   ];
   opcionesTipoEmpresa = [
-    'Servicios Profesionales',
-    'Comercio',
-    'Producción',
-    'Agrícola',
-    'Servicios',
-    'Construcción',
-    'Educación',
-    'Tecnología',
-    'Diseño',
-    'Automotriz',
-    'Transporte',
-    'Salud',
-    'Textil',
-    'Comunicación',
-    'Varios',
-    'Turismo',
-    'Manufactura',
-    'Gastronomía',
+    'Servicios Profesionales', 'Comercio', 'Producción', 'Agrícola', 'Servicios', 
+    'Construcción', 'Educación', 'Tecnología', 'Diseño', 'Automotriz', 
+    'Transporte', 'Salud', 'Textil', 'Comunicación', 'Varios', 'Turismo', 
+    'Manufactura', 'Gastronomía',
   ];
 
   constructor(
@@ -87,33 +62,34 @@ export class RegistroEmpPage implements OnInit {
   ngOnInit() {}
 
   registrarEmprendedor() {
+    // Limpiamos errores anteriores
+    this.errores = {};
+
     this.api.createEmprendedor(this.emprendedor).subscribe({
-      next: () => {
-        this.mostrarToastExito();
+      next: async () => {
+        await this.mostrarToastExito();
         this.router.navigate(['/home']);
       },
       error: (err) => {
         console.error(err);
 
+        // Si el backend devuelve errores de validación
         if (err.status === 400 && err.error?.errors) {
-          const errores = err.error.errors;
-          let mensaje = 'Errores de validación:\n';
-          for (const campo in errores) {
-            mensaje += `${campo}: ${errores[campo].join(', ')}\n`;
-          }
-          alert(mensaje);
+          this.errores = err.error.errors;
         } else {
-          alert('Error al registrar el emprendedor');
+          // Error general
+          alert(err.error?.message || 'Error al registrar el emprendedor');
         }
       },
     });
   }
+
   async mostrarToastExito() {
     const toast = await this.toastController.create({
       message: '✔ Emprendedor registrado con éxito',
       duration: 2500,
       position: 'top',
-      color: 'success', // verde
+      color: 'success',
       icon: 'checkmark-circle-outline',
     });
     await toast.present();

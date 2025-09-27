@@ -6,8 +6,15 @@
         <span>CIEMI UNIANDES</span>
       </div>
     </ion-title>
+
+    <!-- Botón Logout al otro lado -->
+    <button class="logout-button" (click)="logout()">
+      <ion-icon name="log-out-outline"></ion-icon>
+    </button>
   </ion-toolbar>
 </ion-header>
+
+
 
 <ion-content [fullscreen]="true" class="ion-padding">
   <div class="welcome-section">
@@ -44,13 +51,15 @@
         <ion-icon name="add-circle-outline" class="card-icon"></ion-icon>
         <ion-card-title>Reportería</ion-card-title>
       </ion-card-header>
-      <ion-card-content>
-        Genera reportes y estadísticas
-      </ion-card-content>
+      <ion-card-content> Genera reportes y estadísticas </ion-card-content>
     </ion-card>
 
     <!-- Botón de Seguridad -->
-    <ion-card class="menu-card security-card" button routerLink="/seguridad-real">
+    <ion-card
+      class="menu-card security-card"
+      button
+      routerLink="/seguridad-real"
+    >
       <ion-card-header>
         <ion-icon name="shield-outline" class="card-icon"></ion-icon>
         <ion-card-title>Demostración de Seguridad</ion-card-title>
@@ -59,6 +68,5 @@
         Pruebas de seguridad informática en tiempo real
       </ion-card-content>
     </ion-card>
-
   </div>
 </ion-content>
