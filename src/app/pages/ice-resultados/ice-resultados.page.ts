@@ -182,7 +182,7 @@ export class IceResultadosPage implements OnInit, OnDestroy {
   }
 
   navigateBack(): void {
-    this.router.navigate(['/home']);
+    this.router.navigate(['/informacion-resultados', this.idEmprendedor]);
   }
 
   navegarAResultados(): void {
