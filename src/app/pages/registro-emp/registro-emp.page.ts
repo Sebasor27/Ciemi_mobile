@@ -35,20 +35,20 @@ export class RegistroEmpPage implements OnInit {
     estado: true,
   };
 
-  errores: any = {}; // Errores backend
+  errores: any = {};
 
   opcionesRangoEdad = ['Ninguno', '18-25', '26-35', '36-45', '46-59', '60+'];
   opcionesRangoSueldo = ['0-460', '460-750', '750-1000', '1000+'];
   opcionesNivelEstudio = [
-    'Primaria', 'Secundaria', 'Bachillerato', 'Licenciatura', 'Técnico',
-    'Tecnológico', 'Universitario', 'Postgrado', 'Maestría', 'Doctorado',
-    'Especialización', 'Certificación Profesional', 'Formación Profesional',
+    'Primaria', 'Secundaria', 'Bachillerato', 'Licenciatura', 'Técnico', 
+    'Tecnológico', 'Universitario', 'Postgrado', 'Maestría', 'Doctorado', 
+    'Especialización', 'Certificación Profesional', 'Formación Profesional', 
     'Educación Preescolar', 'Educación Media Superior', 'Ninguno',
   ];
   opcionesTipoEmpresa = [
-    'Servicios Profesionales', 'Comercio', 'Producción', 'Agrícola', 'Servicios',
-    'Construcción', 'Educación', 'Tecnología', 'Diseño', 'Automotriz',
-    'Transporte', 'Salud', 'Textil', 'Comunicación', 'Varios', 'Turismo',
+    'Servicios Profesionales', 'Comercio', 'Producción', 'Agrícola', 'Servicios', 
+    'Construcción', 'Educación', 'Tecnología', 'Diseño', 'Automotriz', 
+    'Transporte', 'Salud', 'Textil', 'Comunicación', 'Varios', 'Turismo', 
     'Manufactura', 'Gastronomía',
   ];
 
@@ -64,9 +64,11 @@ export class RegistroEmpPage implements OnInit {
   registrarEmprendedor(form: any) {
     this.errores = {};
 
-    // Validación frontend
+    // Marcar campos como touched para mostrar errores frontend
+    Object.values(form.controls).forEach((control: any) => control.markAsTouched());
+
     if (!form.valid) {
-      return; // no envía si falla la validación
+      return; // No envía si hay campos requeridos vacíos
     }
 
     this.api.createEmprendedor(this.emprendedor).subscribe({
@@ -77,9 +79,11 @@ export class RegistroEmpPage implements OnInit {
       error: (err) => {
         console.error(err);
 
+        // Si el backend devuelve errores de validación
         if (err.status === 400 && err.error?.errors) {
           this.errores = err.error.errors;
         } else {
+          // Error general
           alert(err.error?.message || 'Error al registrar el emprendedor');
         }
       },
