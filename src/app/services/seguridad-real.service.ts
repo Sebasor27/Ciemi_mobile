@@ -44,8 +44,75 @@ export class SeguridadRealService {
     const iv  = CryptoJS.enc.Utf8.parse('16BytesParaElIV!!');
     const enc = CryptoJS.AES.encrypt(json, key, { iv }).toString();
     const fileName = `backup-real-${Date.now()}.json.enc`;
-    await Filesystem.writeFile({ path: fileName, data: enc, directory: Directory.ExternalStorage, encoding: Encoding.UTF8 });
-    return { filename: fileName, size: enc.length };
+
+    try {
+      // Detectar si está en navegador (ionic serve) o en dispositivo móvil
+      if (this.isRunningInBrowser()) {
+        // DESARROLLO: Descargar archivo en navegador (carpeta Downloads)
+        this.downloadFileInBrowser(enc, fileName);
+        console.log('DESARROLLO: Backup descargado en carpeta Downloads del navegador');
+        return { 
+          filename: fileName, 
+          size: enc.length, 
+          location: 'Downloads del navegador',
+          environment: 'development'
+        };
+      } else {
+        // MÓVIL: Usar Capacitor Filesystem
+        await Filesystem.writeFile({ 
+          path: fileName, 
+          data: enc, 
+          directory: Directory.ExternalStorage, 
+          encoding: Encoding.UTF8 
+        });
+        
+        // Obtener la ruta completa en el dispositivo
+        const fileUri = await Filesystem.getUri({
+          directory: Directory.ExternalStorage,
+          path: fileName
+        });
+        
+        console.log('MÓVIL: Backup guardado en:', fileUri.uri);
+        return { 
+          filename: fileName, 
+          size: enc.length, 
+          location: fileUri.uri,
+          environment: 'mobile'
+        };
+      }
+    } catch (error) {
+      console.error('Error al crear backup:', error);
+      throw new Error(`Error al crear backup: ${error}`);
+    }
+  }
+
+  private isRunningInBrowser(): boolean {
+    return !!(window && window.location && window.location.protocol.startsWith('http'));
+  }
+
+  private downloadFileInBrowser(data: string, filename: string): void {
+    try {
+      const blob = new Blob([data], { type: 'application/octet-stream' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      
+      link.href = url;
+      link.download = filename;
+      link.style.display = 'none';
+      
+      // Agregar al DOM, hacer clic y remover
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Limpiar memoria
+      window.URL.revokeObjectURL(url);
+      
+      console.log(`Archivo ${filename} descargado exitosamente`);
+    } catch (error) {
+      console.error('Error al descargar archivo:', error);
+      throw error;
+    }
   }
 
   private logs: any[] = [];
