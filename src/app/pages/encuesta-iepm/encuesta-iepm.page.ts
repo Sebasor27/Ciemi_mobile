@@ -3,33 +3,31 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { EncuestaIepmService } from '../../Service/encuesta-iepm.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { 
-  IonContent, 
-  IonHeader, 
-  IonTitle, 
-  IonToolbar, 
+import {
+  IonContent,
+  IonHeader,
+  IonTitle,
+  IonToolbar,
   IonButton,
   IonIcon,
   IonLabel,
   IonText,
-  IonItem, IonList, IonRadio, IonSpinner
-
+  IonItem,
+  IonList,
+  IonRadio,
+  IonSpinner,
 } from '@ionic/angular/standalone';
-import { IonicModule } from '@ionic/angular';
+import { IonicModule, AlertController } from '@ionic/angular';
 
 @Component({
   selector: 'app-encuesta-iepm',
   templateUrl: './encuesta-iepm.page.html',
   styleUrls: ['./encuesta-iepm.page.scss'],
   standalone: true,
-imports: [
-  IonicModule,
-  CommonModule,
-  FormsModule
-],
+  imports: [IonicModule, CommonModule, FormsModule],
 })
 export class EncuestaIepmPage implements OnInit {
-idEmprendedor: string | null = null;
+  idEmprendedor: string | null = null;
   questions: any[] = [];
   groupedQuestions: any = {};
   currentDestinatario: string = '';
@@ -40,25 +38,26 @@ idEmprendedor: string | null = null;
   submitSuccess = false;
   error: string | null = null;
   showUnansweredAlert = false;
-  destinatarios: string[]=[];
+  destinatarios: string[] = [];
 
   constructor(
     private route: ActivatedRoute,
     private encuestaService: EncuestaIepmService,
-    private router: Router
+    private router: Router,
+    private alertController: AlertController
   ) {}
 
   ngOnInit() {
     this.idEmprendedor = this.route.snapshot.paramMap.get('id');
-  console.log('ID del emprendedor recibido:', this.idEmprendedor);
+    console.log('ID del emprendedor recibido:', this.idEmprendedor);
 
-  if (!this.idEmprendedor) {
-    this.error = 'No se ha proporcionado un ID de emprendedor válido';
-    return;
+    if (!this.idEmprendedor) {
+      this.error = 'No se ha proporcionado un ID de emprendedor válido';
+      return;
+    }
+
+    this.cargarPreguntas();
   }
-
-  this.cargarPreguntas();
-}
 
   cargarPreguntas() {
     this.isLoading = true;
@@ -72,7 +71,7 @@ idEmprendedor: string | null = null;
         this.error = 'Error al obtener preguntas';
         console.error(err);
         this.isLoading = false;
-      }
+      },
     });
   }
 
@@ -83,7 +82,7 @@ idEmprendedor: string | null = null;
       acc[dest].push(pregunta);
       return acc;
     }, {});
-  this.destinatarios = Object.keys(this.groupedQuestions);
+    this.destinatarios = Object.keys(this.groupedQuestions);
     this.currentDestinatario = Object.keys(this.groupedQuestions)[0];
   }
 
@@ -98,7 +97,9 @@ idEmprendedor: string | null = null;
 
   checkAllAnswered(): boolean {
     const preguntasActuales = this.groupedQuestions[this.currentDestinatario];
-    return preguntasActuales.every((q: any) => this.answers[q.idPregunta] !== undefined);
+    return preguntasActuales.every(
+      (q: any) => this.answers[q.idPregunta] !== undefined
+    );
   }
 
   async enviarRespuestas() {
@@ -107,7 +108,7 @@ idEmprendedor: string | null = null;
       idPregunta: +id,
       valor,
       comentarios: this.comments[+id] || null,
-      idEmprendedor: this.idEmprendedor
+      idEmprendedor: this.idEmprendedor,
     }));
 
     this.encuestaService.enviarRespuestas(payload).subscribe({
@@ -120,7 +121,7 @@ idEmprendedor: string | null = null;
       },
       complete: () => {
         this.isSubmitting = false;
-      }
+      },
     });
   }
 
@@ -147,8 +148,25 @@ idEmprendedor: string | null = null;
     }
   }
 
-  volver() {
-    this.router.navigate(['/ventanaencuestas', this.idEmprendedor]);
+  async volver() {
+    const alert = await this.alertController.create({
+      header: 'Salir de la encuesta',
+      message:
+        '¿Está seguro de que desea salir? Los cambios no guardados se perderán.',
+      buttons: [
+        {
+          text: 'Cancelar',
+          role: 'cancel',
+        },
+        {
+          text: 'Salir',
+          handler: () => {
+            this.router.navigate(['/ventana-encuestas', this.idEmprendedor]);
+          },
+        },
+      ],
+    });
+
+    await alert.present();
   }
-  
 }

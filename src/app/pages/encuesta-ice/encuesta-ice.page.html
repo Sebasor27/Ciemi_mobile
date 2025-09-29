@@ -2,8 +2,9 @@
   <ion-toolbar>
     <ion-title>Encuesta ICE</ion-title>
     <ion-buttons slot="start">
-      <!--  la ruta correcta -->
-      <ion-back-button [defaultHref]="'/ventana-encuestas/' + idEmprendedor"></ion-back-button>
+      <ion-button (click)="volver()">
+        <ion-icon name="arrow-back"></ion-icon>
+      </ion-button>
     </ion-buttons>
   </ion-toolbar>
 </ion-header>

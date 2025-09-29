@@ -12,11 +12,11 @@ import {
   IonCardTitle,
   IonCardContent,
   IonRouterLink,
-  IonButton,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { shieldOutline } from 'ionicons/icons';
-
+import { Router } from '@angular/router';
+import { AlertController } from '@ionic/angular';
 @Component({
   selector: 'app-home',
   templateUrl: './home.page.html',
@@ -35,16 +35,41 @@ import { shieldOutline } from 'ionicons/icons';
     IonCardHeader,
     IonCardTitle,
     IonCardContent,
-    IonButton,
   ],
 })
 export class HomePage {
-  constructor() {
+  constructor(
+    private router: Router,
+    private alertController: AlertController
+  ) {
     // Registrar el icono del escudo
     addIcons({
       'shield-outline': shieldOutline
     });
   }
   
-  logout() {}
+  async logout() {
+    const alert = await this.alertController.create({
+      header: 'Confirmar cierre de sesión',
+      message: '¿Está seguro de que desea cerrar sesión?',
+      buttons: [
+        {
+          text: 'Cancelar',
+          role: 'cancel'
+        },
+        {
+          text: 'Cerrar sesión',
+          handler: () => {
+            localStorage.removeItem('token'); // elimina token
+            this.router.navigate(['/login'], {
+              replaceUrl: true,
+              skipLocationChange: true,
+            });
+          }
+        }
+      ]
+    });
+
+    await alert.present();
+  }
 }
