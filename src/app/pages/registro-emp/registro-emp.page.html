@@ -1,4 +1,4 @@
-```html
+
 <ion-content>
   <ion-header>
     <ion-toolbar>
@@ -114,9 +114,6 @@
       <ion-label position="floating">Celular</ion-label>
       <ion-input [(ngModel)]="emprendedor.celular" name="celular" required pattern="^[0-9]{10}$"></ion-input>
     </ion-item>
-    <ion-note color="danger" *ngIf="form.submitted && form.controls.celular?.errors?.['pattern']">
-      El celular debe tener exactamente 10 dígitos.
-    </ion-note>
     <ion-note color="danger" *ngIf="errores.celular">{{ errores.celular[0] }}</ion-note>
 
     <!-- Correo -->
@@ -131,12 +128,6 @@
       <ion-label position="floating">Cédula</ion-label>
       <ion-input [(ngModel)]="emprendedor.cedula" name="cedula" required minlength="10" maxlength="10"></ion-input>
     </ion-item>
-    <ion-note color="danger" *ngIf="form.submitted && form.controls.cedula?.errors?.['minlength']">
-      La cédula debe tener 10 caracteres.
-    </ion-note>
-    <ion-note color="danger" *ngIf="form.submitted && form.controls.cedula?.errors?.['maxlength']">
-      La cédula debe tener máximo 10 caracteres.
-    </ion-note>
     <ion-note color="danger" *ngIf="errores.cedula">{{ errores.cedula[0] }}</ion-note>
 
     <div style="margin-top: 1rem; text-align: center">
@@ -144,5 +135,5 @@
     </div>
   </form>
 </ion-content>
-```
+
 
