@@ -1,9 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, NgForm } from '@angular/forms';
 import { IonicModule, ToastController } from '@ionic/angular';
 import { ApiService } from 'src/app/Service/api.service';
-import { AuthService } from 'src/app/Service/auth.service';
 import { Router } from '@angular/router';
 
 @Component({
@@ -54,36 +53,48 @@ export class RegistroEmpPage implements OnInit {
 
   constructor(
     private api: ApiService,
-    private auth: AuthService,
     private router: Router,
     private toastController: ToastController
   ) {}
 
   ngOnInit() {}
 
-  registrarEmprendedor(form: any) {
+  registrarEmprendedor(form: NgForm) {
     this.errores = {};
 
-    // Marcar campos como touched para mostrar errores frontend
-    Object.values(form.controls).forEach((control: any) => control.markAsTouched());
+    // Marcar todos los campos como touched para mostrar errores
+    Object.values(form.controls).forEach((control: any) => {
+  if (control.markAsTouched) control.markAsTouched();
+});
 
-    if (!form.valid) {
-      return; // No envía si hay campos requeridos vacíos
+    if (!form.valid) return;
+
+    // Preparar payload compatible con DTO
+    const payload = { ...this.emprendedor };
+    payload.edad = String(payload.edad);
+    payload.empleadosHombres = Number(payload.empleadosHombres);
+    payload.empleadosMujeres = Number(payload.empleadosMujeres);
+    payload.anoCreacionEmpresa = Number(payload.anoCreacionEmpresa);
+
+    // Convertir strings vacíos a null (para opcionales)
+    for (const key in payload) {
+      if (payload[key] === '') payload[key] = null;
     }
 
-    this.api.createEmprendedor(this.emprendedor).subscribe({
+    // Fecha en formato ISO
+    payload.fechaRegistro = payload.fechaRegistro.toISOString();
+
+    this.api.createEmprendedor(payload).subscribe({
       next: async () => {
         await this.mostrarToastExito();
         this.router.navigate(['/home']);
       },
       error: (err) => {
-        console.error(err);
+        console.error('Error backend:', err);
 
-        // Si el backend devuelve errores de validación
         if (err.status === 400 && err.error?.errors) {
           this.errores = err.error.errors;
         } else {
-          // Error general
           alert(err.error?.message || 'Error al registrar el emprendedor');
         }
       },
