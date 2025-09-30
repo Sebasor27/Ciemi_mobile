@@ -1,14 +1,14 @@
 <ion-header class="custom-header">
-  <ion-toolbar>
+  <ion-toolbar color="primary">
     <ion-buttons slot="start">
-      <ion-button (click)="navigateBack()" class="nav-button">
+      <ion-button (click)="navigateBack()">
         <ion-icon name="arrow-back"></ion-icon>
       </ion-button>
     </ion-buttons>
     <ion-title>Resultados ICE</ion-title>
     <ion-buttons slot="end">
-      <ion-button (click)="imprimir()" class="nav-button">
-        <ion-icon name="print"></ion-icon>
+      <ion-button (click)="imprimir()">
+        <ion-icon name="print-outline"></ion-icon>
       </ion-button>
     </ion-buttons>
   </ion-toolbar>
@@ -19,15 +19,20 @@
     
     <!-- Loading State -->
     <div *ngIf="isLoading" class="state-container">
-      <ion-spinner></ion-spinner>
-      <p class="state-text">Cargando resultados...</p>
+      <ion-spinner name="crescent"></ion-spinner>
+      <ion-text>
+        <h3>Cargando resultados ICE...</h3>
+      </ion-text>
     </div>
 
     <!-- Error State -->
-    <div *ngIf="error && !isLoading" class="state-container">
+    <div *ngIf="error && !isLoading" class="state-container error-state">
       <ion-icon name="alert-circle" size="large" color="danger"></ion-icon>
-      <p class="state-text">{{ error }}</p>
-      <ion-button (click)="loadData()" color="primary">
+      <ion-text color="danger">
+        <h3>{{ error }}</h3>
+      </ion-text>
+      <ion-button (click)="loadData()" color="primary" fill="outline">
+        <ion-icon name="refresh-outline" slot="start"></ion-icon>
         Reintentar
       </ion-button>
     </div>
@@ -39,24 +44,49 @@
       <ion-card class="profile-card">
         <ion-card-header class="profile-header">
           <div class="profile-avatar">
-            <ion-icon name="person" class="avatar-icon"></ion-icon>
+            <ion-icon name="person-circle" class="avatar-icon"></ion-icon>
           </div>
           <div class="profile-info">
             <ion-card-title>{{ emprendedor?.nombre || 'Emprendedor' }}</ion-card-title>
-            <ion-card-subtitle>Resultados de Competencias ICE</ion-card-subtitle>
+            <ion-card-subtitle *ngIf="emprendedor?.email">{{ emprendedor?.email }}</ion-card-subtitle>
+            <ion-card-subtitle>Índice de Competencias Emprendedoras</ion-card-subtitle>
           </div>
         </ion-card-header>
         
         <ion-card-content>
           <div class="ice-total-container">
-            <h3>ICE Total</h3>
-            <div class="ice-total-value">
-              {{ calcularIceGeneral().toFixed(3) }}
+            <div class="ice-header">
+              <h3>ICE Total</h3>
+              <div class="ice-info">
+                <ion-chip>
+                  <ion-icon name="help-circle-outline"></ion-icon>
+                  <ion-label>56 Preguntas</ion-label>
+                </ion-chip>
+                <ion-chip>
+                  <ion-icon name="layers-outline"></ion-icon>
+                  <ion-label>10 Competencias</ion-label>
+                </ion-chip>
+              </div>
             </div>
+            
+            <div class="ice-total-value">
+              <span class="value-number">{{ calcularIceGeneral().toFixed(3) }}</span>
+              <span class="value-max">/ 1.000</span>
+            </div>
+            
             <ion-progress-bar 
               [value]="calcularIceGeneral()" 
               [color]="calcularIceGeneral() > 0.8 ? 'success' : calcularIceGeneral() > 0.6 ? 'warning' : 'danger'">
             </ion-progress-bar>
+            
+            <div class="ice-nivel">
+              <ion-badge 
+                [color]="calcularIceGeneral() > 0.8 ? 'success' : calcularIceGeneral() > 0.6 ? 'warning' : 'danger'"
+                class="nivel-badge">
+                {{ calcularIceGeneral() > 0.8 ? 'Alto' : calcularIceGeneral() > 0.6 ? 'Medio' : 'Bajo' }}
+              </ion-badge>
+              <span class="percentage">{{ (calcularIceGeneral() * 100).toFixed(1) }}%</span>
+            </div>
           </div>
         </ion-card-content>
       </ion-card>
@@ -65,25 +95,33 @@
       <ion-card class="results-card">
         <ion-card-header>
           <ion-card-title>
-            <ion-icon name="bar-chart" class="title-icon"></ion-icon>
-            Competencias Emprendedoras
+            <ion-icon name="bar-chart-outline" class="title-icon"></ion-icon>
+            10 Competencias Emprendedoras
           </ion-card-title>
+          <ion-card-subtitle>Evaluación detallada por competencia</ion-card-subtitle>
         </ion-card-header>
         
         <ion-card-content>
           <div class="competencias-list">
             <div 
               *ngFor="let resultado of resultados; trackBy: trackByCompetencia" 
-              class="competencia-item">
+              class="competencia-item"
+              [class.nivel-alto]="resultado.nivel === 'Alto'"
+              [class.nivel-medio]="resultado.nivel === 'Medio'"
+              [class.nivel-bajo]="resultado.nivel === 'Bajo'">
               
               <div class="competencia-header">
                 <div class="competencia-info">
-                  <h4 class="competencia-nombre">{{ resultado.nombre }}</h4>
-                  <span class="competencia-id">ID: {{ resultado.idCompetencia }}</span>
+                  <div class="competencia-title">
+                    <h4 class="competencia-nombre">{{ resultado.nombre }}</h4>
+                    <span class="competencia-id">C{{ resultado.idCompetencia }}</span>
+                  </div>
+                  <p class="competencia-descripcion">{{ resultado.descripcion }}</p>
                 </div>
+                
                 <div class="competencia-score">
                   <span class="score-value">{{ resultado.puntuacionCompetencia.toFixed(3) }}</span>
-                  <ion-badge [color]="getProgressColor(resultado.nivel)">
+                  <ion-badge [color]="getProgressColor(resultado.nivel)" class="nivel-badge">
                     {{ resultado.nivel }}
                   </ion-badge>
                 </div>
@@ -94,8 +132,8 @@
                   [value]="resultado.puntuacionCompetencia" 
                   [color]="getProgressColor(resultado.nivel)">
                 </ion-progress-bar>
-                <div class="progress-percentage">
-                  {{ (resultado.puntuacionCompetencia * 100).toFixed(1) }}%
+                <div class="progress-info">
+                  <span class="progress-percentage">{{ (resultado.puntuacionCompetencia * 100).toFixed(1) }}%</span>
                 </div>
               </div>
               
@@ -109,7 +147,7 @@
       <ion-card class="stats-card">
         <ion-card-header>
           <ion-card-title>
-            <ion-icon name="analytics" class="title-icon"></ion-icon>
+            <ion-icon name="analytics-outline" class="title-icon"></ion-icon>
             Resumen Estadístico
           </ion-card-title>
         </ion-card-header>
@@ -117,23 +155,72 @@
         <ion-card-content>
           <div class="stats-grid">
             <div class="stat-item">
-              <div class="stat-value">{{ resultados.length }}</div>
-              <div class="stat-label">Competencias</div>
+              <ion-icon name="list-outline" color="primary"></ion-icon>
+              <div class="stat-content">
+                <div class="stat-value">{{ resultados.length }}</div>
+                <div class="stat-label">Competencias</div>
+              </div>
             </div>
             
             <div class="stat-item">
-              <div class="stat-value">{{ nivelAltoCount }}</div>
-              <div class="stat-label">Nivel Alto</div>
+              <ion-icon name="calculator-outline" color="secondary"></ion-icon>
+              <div class="stat-content">
+                <div class="stat-value">{{ promedioCompetencias.toFixed(3) }}</div>
+                <div class="stat-label">Promedio</div>
+              </div>
             </div>
             
             <div class="stat-item">
-              <div class="stat-value">{{ nivelMedioCount }}</div>
-              <div class="stat-label">Nivel Medio</div>
+              <ion-icon name="trending-up-outline" color="success"></ion-icon>
+              <div class="stat-content">
+                <div class="stat-value">{{ nivelAltoCount }}</div>
+                <div class="stat-label">Nivel Alto</div>
+              </div>
             </div>
             
             <div class="stat-item">
-              <div class="stat-value">{{ nivelBajoCount }}</div>
-              <div class="stat-label">Nivel Bajo</div>
+              <ion-icon name="remove-outline" color="warning"></ion-icon>
+              <div class="stat-content">
+                <div class="stat-value">{{ nivelMedioCount }}</div>
+                <div class="stat-label">Nivel Medio</div>
+              </div>
+            </div>
+            
+            <div class="stat-item">
+              <ion-icon name="trending-down-outline" color="danger"></ion-icon>
+              <div class="stat-content">
+                <div class="stat-value">{{ nivelBajoCount }}</div>
+                <div class="stat-label">Nivel Bajo</div>
+              </div>
+            </div>
+            
+            <div class="stat-item">
+              <ion-icon name="help-circle-outline" color="medium"></ion-icon>
+              <div class="stat-content">
+                <div class="stat-value">56</div>
+                <div class="stat-label">Preguntas</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Destacados -->
+          <div class="destacados" *ngIf="competenciaMasAlta && competenciaMasBaja">
+            <div class="destacado-item alta">
+              <ion-icon name="trophy-outline" color="success"></ion-icon>
+              <div class="destacado-content">
+                <strong>Competencia Más Alta</strong>
+                <p>{{ competenciaMasAlta.nombre }}</p>
+                <span>{{ competenciaMasAlta.puntuacionCompetencia.toFixed(3) }}</span>
+              </div>
+            </div>
+            
+            <div class="destacado-item baja">
+              <ion-icon name="flag-outline" color="warning"></ion-icon>
+              <div class="destacado-content">
+                <strong>Área de Oportunidad</strong>
+                <p>{{ competenciaMasBaja.nombre }}</p>
+                <span>{{ competenciaMasBaja.puntuacionCompetencia.toFixed(3) }}</span>
+              </div>
             </div>
           </div>
         </ion-card-content>
@@ -143,13 +230,37 @@
       <div class="actions-container">
         <ion-button 
           expand="block" 
-          color="primary" 
+          class="btn-graficas"
+          (click)="navegarAGraficas()">
+          <ion-icon name="bar-chart-outline" slot="start"></ion-icon>
+          Ver Gráficas Detalladas
+        </ion-button>
+        
+        <ion-button 
+          expand="block" 
+          class="btn-imprimir"
+          (click)="imprimir()">
+          <ion-icon name="print-outline" slot="start"></ion-icon>
+          Imprimir Resultados
+        </ion-button>
+        
+        <ion-button 
+          expand="block" 
+          class="btn-regresar"
           (click)="navegarAResultados()">
-          <ion-icon name="document-text" slot="start"></ion-icon>
-          Ver Resultados Completos
+          <ion-icon name="arrow-back-outline" slot="start"></ion-icon>
+          Regresar a Listado
         </ion-button>
       </div>
 
     </div>
   </div>
+
+  <!-- Floating Debug Button -->
+  <ion-fab vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button color="tertiary" size="small" (click)="diagnosticarEstado()">
+      <ion-icon name="bug-outline"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
+
 </ion-content>

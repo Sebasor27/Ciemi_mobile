@@ -253,13 +253,19 @@ export class IepmResultadosPage implements OnInit, OnDestroy {
     return enfoques[enfoque] || enfoque;
   }
 
-  // MÉTODOS DE CÁLCULO Y ANÁLISIS
+  // MÉTODOS DE CÁLCULO Y ANÁLISIS - CORREGIDO
   getNivelPuntaje(puntaje: number): { nivel: string; color: string } {
-    if (puntaje >= 0 && puntaje < 2) {
+    // Convertir a escala 0-1 si viene en escala 0-5
+    const puntajeNormalizado = puntaje > 1 ? puntaje / 5 : puntaje;
+    
+    // Rangos según tabla de acciones recomendadas (escala 0-1)
+    if (puntajeNormalizado >= 0 && puntajeNormalizado < 0.300) {
+      return { nivel: 'Muy Bajo', color: '#FF3333' };
+    } else if (puntajeNormalizado >= 0.300 && puntajeNormalizado < 0.600) {
       return { nivel: 'Bajo', color: '#FF6E6E' };
-    } else if (puntaje >= 2 && puntaje < 4) {
+    } else if (puntajeNormalizado >= 0.600 && puntajeNormalizado < 0.800) {
       return { nivel: 'Medio', color: '#FFE066' };
-    } else if (puntaje >= 4 && puntaje <= 5) {
+    } else if (puntajeNormalizado >= 0.800 && puntajeNormalizado <= 1.000) {
       return { nivel: 'Alto', color: '#7CFFCB' };
     }
 
@@ -373,12 +379,15 @@ export class IepmResultadosPage implements OnInit, OnDestroy {
       console.log('RESULTADOS IEPM:');
       console.log('  • Puntaje Total:', this.iepmData.resultadoTotal.puntaje);
       console.log('  • Valoración:', this.iepmData.resultadoTotal.valoracion);
+      const nivelTotal = this.getNivelPuntaje(this.iepmData.resultadoTotal.puntaje);
+      console.log('  • Nivel Calculado:', nivelTotal.nivel, `(${nivelTotal.color})`);
       console.log('  • Dimensiones:', this.iepmData.porDimension.length);
       console.log('  • Indicadores:', this.iepmData.porIndicador.length);
       console.log('───────────────────────────────────────────────');
       console.log('DIMENSIONES:');
       this.iepmData.porDimension.forEach(d => {
-        console.log(`  ${d.idDimension}. ${d.dimension}: ${d.puntaje.toFixed(2)}/5.0`);
+        const nivel = this.getNivelPuntaje(d.puntaje);
+        console.log(`  ${d.idDimension}. ${d.dimension}: ${d.puntaje.toFixed(2)}/5.0 - ${nivel.nivel}`);
       });
       console.log('───────────────────────────────────────────────');
       console.log('INDICADORES POR DIMENSIÓN:');
@@ -386,7 +395,8 @@ export class IepmResultadosPage implements OnInit, OnDestroy {
         const indicadores = this.getIndicadoresPorDimension(d.idDimension);
         console.log(`  ${d.dimension}:`);
         indicadores.forEach(i => {
-          console.log(`    • ${i.indicador} (${i.enfoque}): ${i.puntaje.toFixed(2)}/5.0`);
+          const nivel = this.getNivelPuntaje(i.puntaje);
+          console.log(`    • ${i.indicador} (${i.enfoque}): ${i.puntaje.toFixed(2)}/5.0 - ${nivel.nivel}`);
         });
       });
     }

@@ -230,9 +230,90 @@ ion-content {
   font-weight: 500;
 }
 
-/* Actions */
+/* ============================================
+   BOTONES DE ACCIÓN - COLORES VIVOS
+   ============================================ */
 .actions-container {
   padding: 20px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Botón Ver Gráficas - Naranja Brillante */
+.btn-graficas {
+  --background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+  --background-hover: linear-gradient(135deg, #ff8c42 0%, #ff6b35 100%);
+  --background-activated: #ff5722;
+  --color: #ffffff;
+  --box-shadow: 0 4px 20px rgba(255, 107, 53, 0.4);
+  
+  height: 56px;
+  font-weight: 700;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 12px;
+  
+  ion-icon {
+    font-size: 1.5rem;
+  }
+}
+
+/* Botón Imprimir - Verde Vibrante */
+.btn-imprimir {
+  --background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+  --background-hover: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+  --background-activated: #059669;
+  --color: #ffffff;
+  --box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+  
+  height: 56px;
+  font-weight: 700;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 12px;
+  
+  ion-icon {
+    font-size: 1.5rem;
+  }
+}
+
+/* Botón Regresar - Púrpura Intenso */
+.btn-regresar {
+  --background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
+  --background-hover: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%);
+  --background-activated: #7c3aed;
+  --color: #ffffff;
+  --box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
+  
+  height: 56px;
+  font-weight: 700;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 12px;
+  
+  ion-icon {
+    font-size: 1.5rem;
+  }
+}
+
+/* Efecto hover para todos los botones */
+.btn-graficas:hover,
+.btn-imprimir:hover,
+.btn-regresar:hover {
+  transform: translateY(-2px);
+  transition: all 0.3s ease;
+}
+
+/* Efecto active para todos los botones */
+.btn-graficas:active,
+.btn-imprimir:active,
+.btn-regresar:active {
+  transform: translateY(0);
+  transition: all 0.1s ease;
 }
 
 /* Texto negro y bold en general */
@@ -271,12 +352,21 @@ p, span, div {
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+  
+  /* Botones en móvil */
+  .btn-graficas,
+  .btn-imprimir,
+  .btn-regresar {
+    height: 52px;
+    font-size: 0.95rem;
+  }
 }
 
 /* Print styles */
 @media print {
   .custom-header,
-  .actions-container {
+  .actions-container,
+  ion-fab {
     display: none !important;
   }
   
