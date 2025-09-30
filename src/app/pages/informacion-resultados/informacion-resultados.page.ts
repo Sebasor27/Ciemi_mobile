@@ -18,6 +18,8 @@ interface Encuesta {
   idEncuesta: number;
   fechaEvaluacion: string;
   fechaAplicacion: string;
+  idOriginal?: number;
+  idMostrar?: number;
 }
 
 interface ResultadoICE {
@@ -145,11 +147,26 @@ export class InformacionResultadosPage implements OnInit, OnDestroy {
       
       this.encuestas = Array.isArray(data) ? data : [];
       
+      this.encuestas.sort((a, b) => {
+        const fechaA = new Date(a.fechaAplicacion || a.fechaEvaluacion).getTime();
+        const fechaB = new Date(b.fechaAplicacion || b.fechaEvaluacion).getTime();
+        return fechaB - fechaA;
+      });
+      
+      this.encuestas = this.encuestas.map((encuesta, index): Encuesta => ({
+        ...encuesta,
+        idOriginal: encuesta.idEncuesta,
+        idMostrar: index + 1
+      }));
+      
       if (this.encuestas.length > 0) {
-        this.encuestaSeleccionada = this.encuestas[0].idEncuesta;
+        this.encuestaSeleccionada = this.encuestas[0].idOriginal!;
         this.syncEncuestaObjects();
       }
+
+      console.log('Encuestas ICE cargadas:', this.encuestas.length);
     } catch (error) {
+      console.error('Error al cargar encuestas ICE:', error);
       this.encuestas = [];
     }
   }
@@ -165,18 +182,33 @@ export class InformacionResultadosPage implements OnInit, OnDestroy {
       
       this.encuestasIEPM = Array.isArray(data) ? data : [];
       
+      this.encuestasIEPM.sort((a, b) => {
+        const fechaA = new Date(a.fechaAplicacion || a.fechaEvaluacion).getTime();
+        const fechaB = new Date(b.fechaAplicacion || b.fechaEvaluacion).getTime();
+        return fechaB - fechaA;
+      });
+      
+      this.encuestasIEPM = this.encuestasIEPM.map((encuesta, index): Encuesta => ({
+        ...encuesta,
+        idOriginal: encuesta.idEncuesta,
+        idMostrar: index + 1
+      }));
+      
       if (this.encuestasIEPM.length > 0) {
-        this.encuestaSeleccionadaIEPM = this.encuestasIEPM[0].idEncuesta;
+        this.encuestaSeleccionadaIEPM = this.encuestasIEPM[0].idOriginal!;
         this.syncEncuestaObjects();
       }
+
+      console.log('Encuestas IEPM cargadas:', this.encuestasIEPM.length);
     } catch (error) {
+      console.error('Error al cargar encuestas IEPM:', error);
       this.encuestasIEPM = [];
     }
   }
 
   private syncEncuestaObjects(): void {
-    this.encuestaSeleccionadaObj = this.encuestas.find(e => e.idEncuesta === this.encuestaSeleccionada) || null;
-    this.encuestaSeleccionadaIEPMObj = this.encuestasIEPM.find(e => e.idEncuesta === this.encuestaSeleccionadaIEPM) || null;
+    this.encuestaSeleccionadaObj = this.encuestas.find(e => e.idOriginal === this.encuestaSeleccionada) || null;
+    this.encuestaSeleccionadaIEPMObj = this.encuestasIEPM.find(e => e.idOriginal === this.encuestaSeleccionadaIEPM) || null;
   }
 
   onEncuestaSeleccionadaChange(event: any): void {
@@ -423,14 +455,9 @@ export class InformacionResultadosPage implements OnInit, OnDestroy {
 
   private getNombreDimension(idDimension: number): string {
     const nombres: { [key: number]: string } = {
-      1: 'Motivación',
-      2: 'Perseverancia',
-      3: 'Liderazgo',
-      4: 'Creatividad',
-      5: 'Innovación',
-      6: 'Toma de Riesgos',
-      7: 'Autonomía',
-      8: 'Orientación al Logro'
+      1: 'Calidad y Eficiencia Laboral',
+      2: 'Infraestructura Laboral',
+      3: 'Tecnología e Innovación'
     };
     return nombres[idDimension] || `Dimensión ${idDimension}`;
   }
@@ -517,24 +544,60 @@ export class InformacionResultadosPage implements OnInit, OnDestroy {
 
   formatearFecha(fecha: string): string {
     if (!fecha) return 'N/A';
+    
     try {
       const date = new Date(fecha);
-      return isNaN(date.getTime()) ? 'N/A' : date.toLocaleDateString('es-ES');
-    } catch {
-      return 'N/A';
+      
+      if (isNaN(date.getTime())) {
+        console.warn('Fecha inválida:', fecha);
+        return 'Fecha inválida';
+      }
+      
+      return date.toLocaleDateString('es-ES', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        timeZone: 'UTC'
+      });
+    } catch (error) {
+      console.error('Error formateando fecha:', fecha, error);
+      return 'Error en fecha';
     }
   }
 
   getFechaEvaluacion(encuesta: Encuesta | null): string {
-    return encuesta?.fechaEvaluacion ? this.formatearFecha(encuesta.fechaEvaluacion) : 'N/A';
+    if (!encuesta) return 'N/A';
+    const fecha = encuesta.fechaEvaluacion || encuesta.fechaAplicacion;
+    if (!fecha) return 'N/A';
+    return this.formatearFecha(fecha);
   }
 
   getFechaAplicacion(encuesta: Encuesta | null): string {
-    return encuesta?.fechaAplicacion ? this.formatearFecha(encuesta.fechaAplicacion) : 'N/A';
+    if (!encuesta) return 'N/A';
+    const fecha = encuesta.fechaAplicacion;
+    if (!fecha) return 'N/A';
+    return this.formatearFecha(fecha);
+  }
+
+  getDescripcionEncuesta(encuesta: Encuesta | null): string {
+    if (!encuesta) return 'No seleccionada';
+    
+    const fechaAplicacion = this.getFechaAplicacion(encuesta);
+    const fechaEvaluacion = this.getFechaEvaluacion(encuesta);
+    
+    if (fechaAplicacion === fechaEvaluacion) {
+      return `Encuesta del ${fechaAplicacion}`;
+    } else {
+      return `Aplicada: ${fechaAplicacion} | Evaluada: ${fechaEvaluacion}`;
+    }
   }
 
   getCurrentDate(): string {
-    return new Date().toLocaleDateString('es-ES');
+    return new Date().toLocaleDateString('es-ES', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
   }
 
   async verificarConectividadAPI(): Promise<void> {
@@ -558,18 +621,44 @@ export class InformacionResultadosPage implements OnInit, OnDestroy {
   }
 
   diagnosticarEstado(): void {
-    console.log('DIAGNÓSTICO - INFORMACIÓN RESULTADOS:');
-    console.log('ID Emprendedor:', this.idEmprendedor);
-    console.log('Emprendedor:', !!this.emprendedor);
-    console.log('Encuestas ICE:', this.encuestas?.length || 0);
-    console.log('Encuestas IEPM:', this.encuestasIEPM?.length || 0);
-    console.log('ICE seleccionada:', this.encuestaSeleccionada);
-    console.log('IEPM seleccionada:', this.encuestaSeleccionadaIEPM);
-    console.log('Resultados ICE cargados:', this.resultadosICE.length);
-    console.log('Resultados IEPM cargados:', this.resultadosIEPM.length);
+    console.log('═══════════════════════════════════════════════');
+    console.log('DIAGNÓSTICO - INFORMACIÓN RESULTADOS');
+    console.log('═══════════════════════════════════════════════');
+    console.log('PARÁMETROS:');
+    console.log('  • ID Emprendedor:', this.idEmprendedor);
+    console.log('───────────────────────────────────────────────');
+    console.log('EMPRENDEDOR:');
+    console.log('  • Cargado:', !!this.emprendedor);
+    console.log('  • Nombre:', this.emprendedor?.nombre || 'N/A');
+    console.log('───────────────────────────────────────────────');
+    console.log('ENCUESTAS ICE:');
+    console.log('  • Total:', this.encuestas.length);
+    console.log('  • Seleccionada (ID Original):', this.encuestaSeleccionada);
+    if (this.encuestaSeleccionadaObj) {
+      console.log('  • Detalles encuesta seleccionada:');
+      console.log('    - ID Original:', this.encuestaSeleccionadaObj.idOriginal);
+      console.log('    - ID Mostrar:', this.encuestaSeleccionadaObj.idMostrar);
+      console.log('    - Fecha Aplicación:', this.encuestaSeleccionadaObj.fechaAplicacion);
+    }
+    console.log('───────────────────────────────────────────────');
+    console.log('ENCUESTAS IEPM:');
+    console.log('  • Total:', this.encuestasIEPM.length);
+    console.log('  • Seleccionada (ID Original):', this.encuestaSeleccionadaIEPM);
+    if (this.encuestaSeleccionadaIEPMObj) {
+      console.log('  • Detalles encuesta seleccionada:');
+      console.log('    - ID Original:', this.encuestaSeleccionadaIEPMObj.idOriginal);
+      console.log('    - ID Mostrar:', this.encuestaSeleccionadaIEPMObj.idMostrar);
+      console.log('    - Fecha Aplicación:', this.encuestaSeleccionadaIEPMObj.fechaAplicacion);
+    }
+    console.log('───────────────────────────────────────────────');
+    console.log('RESULTADOS CARGADOS:');
+    console.log('  • ICE:', this.resultadosICE.length);
+    console.log('  • IEPM:', this.resultadosIEPM.length);
+    console.log('═══════════════════════════════════════════════');
   }
 
   private async handleError(message: string): Promise<void> {
+    console.error('Error:', message);
     this.error = message;
     this.isLoading = false;
     await this.showToast(message, 'danger');

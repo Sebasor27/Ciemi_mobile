@@ -328,7 +328,7 @@ export class GraficaIepmResultadosPage implements OnInit, AfterViewInit, OnDestr
           tooltip: {
             callbacks: {
               label: (context: any) => {
-                return `${context.label}: ${context.parsed.y.toFixed(2)} / 5.00`;
+                return `${context.label}: ${context.parsed.y.toFixed(2)} / 1.00`;
               }
             }
           }
@@ -393,7 +393,7 @@ export class GraficaIepmResultadosPage implements OnInit, AfterViewInit, OnDestr
                 return [
                   `${context.label}`,
                   `Enfoque: ${indicador?.enfoque}`,
-                  `Puntaje: ${context.parsed.toFixed(2)} / 5.00`
+                  `Puntaje: ${context.parsed.toFixed(2)} / 1.00`
                 ];
               }
             }

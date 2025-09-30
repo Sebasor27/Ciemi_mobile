@@ -59,54 +59,77 @@
         <ion-col size="12" size-md="6">
           <ion-card>
             <ion-card-header>
-              <ion-card-title>Encuestas ICE</ion-card-title>
+              <ion-card-title>
+                <ion-icon name="document-text-outline" slot="start"></ion-icon>
+                Encuestas ICE Disponibles
+              </ion-card-title>
+              <ion-card-subtitle>Selecciona una encuesta para ver resultados</ion-card-subtitle>
             </ion-card-header>
             <ion-card-content>
-              <ion-item *ngIf="encuestas.length === 0">
-                <ion-label>No hay encuestas ICE disponibles</ion-label>
+              <ion-item *ngIf="encuestas.length === 0" lines="none">
+                <ion-label color="medium">
+                  <p>No hay encuestas ICE disponibles</p>
+                </ion-label>
               </ion-item>
-              <ion-select 
-                *ngIf="encuestas.length > 0"
-                [(ngModel)]="encuestaSeleccionada" 
-                (ionChange)="onEncuestaSeleccionadaChange($event)"
-                placeholder="Selecciona una encuesta ICE">
-                <ion-select-option 
-                  *ngFor="let encuesta of encuestas" 
-                  [value]="encuesta.idEncuesta">
-                  {{ formatearFecha(encuesta.fechaAplicacion) }}
-                </ion-select-option>
-              </ion-select>
-              <div *ngIf="encuestaSeleccionadaObj" class="encuesta-info">
-                <p><strong>Fecha Evaluación:</strong> {{ getFechaEvaluacion(encuestaSeleccionadaObj) }}</p>
-                <p><strong>Fecha Aplicación:</strong> {{ getFechaAplicacion(encuestaSeleccionadaObj) }}</p>
-              </div>
+              
+              <ion-list *ngIf="encuestas.length > 0">
+                <ion-radio-group [(ngModel)]="encuestaSeleccionada" (ionChange)="onEncuestaSeleccionadaChange($event)">
+                  <ion-item *ngFor="let encuesta of encuestas; let i = index" lines="full">
+                    <ion-radio slot="start" [value]="encuesta.idOriginal"></ion-radio>
+                    <ion-label>
+                      <h3>
+                        <ion-text color="primary">
+                          <strong>Encuesta #{{ encuesta.idMostrar }}</strong>
+                        </ion-text>
+                        <ion-badge *ngIf="i === 0" color="success" style="margin-left: 8px;">Reciente</ion-badge>
+                      </h3>
+                      <p style="margin: 4px 0;">
+                        <ion-icon name="calendar-outline" size="small"></ion-icon>
+                        {{ formatearFecha(encuesta.fechaAplicacion) }}
+                      </p>
+                    </ion-label>
+                  </ion-item>
+                </ion-radio-group>
+              </ion-list>
             </ion-card-content>
           </ion-card>
         </ion-col>
+
         <ion-col size="12" size-md="6">
           <ion-card>
             <ion-card-header>
-              <ion-card-title>Encuestas IEPM</ion-card-title>
+              <ion-card-title>
+                <ion-icon name="analytics-outline" slot="start"></ion-icon>
+                Encuestas IEPM Disponibles
+              </ion-card-title>
+              <ion-card-subtitle>Selecciona una encuesta para ver resultados</ion-card-subtitle>
             </ion-card-header>
             <ion-card-content>
-              <ion-item *ngIf="encuestasIEPM.length === 0">
-                <ion-label>No hay encuestas IEPM disponibles</ion-label>
+              <ion-item *ngIf="encuestasIEPM.length === 0" lines="none">
+                <ion-label color="medium">
+                  <p>No hay encuestas IEPM disponibles</p>
+                </ion-label>
               </ion-item>
-              <ion-select 
-                *ngIf="encuestasIEPM.length > 0"
-                [(ngModel)]="encuestaSeleccionadaIEPM" 
-                (ionChange)="onEncuestaSeleccionadaIEPMChange($event)"
-                placeholder="Selecciona una encuesta IEPM">
-                <ion-select-option 
-                  *ngFor="let encuesta of encuestasIEPM" 
-                  [value]="encuesta.idEncuesta">
-                  {{ formatearFecha(encuesta.fechaAplicacion) }}
-                </ion-select-option>
-              </ion-select>
-              <div *ngIf="encuestaSeleccionadaIEPMObj" class="encuesta-info">
-                <p><strong>Fecha Evaluación:</strong> {{ getFechaEvaluacion(encuestaSeleccionadaIEPMObj) }}</p>
-                <p><strong>Fecha Aplicación:</strong> {{ getFechaAplicacion(encuestaSeleccionadaIEPMObj) }}</p>
-              </div>
+              
+              <ion-list *ngIf="encuestasIEPM.length > 0">
+                <ion-radio-group [(ngModel)]="encuestaSeleccionadaIEPM" (ionChange)="onEncuestaSeleccionadaIEPMChange($event)">
+                  <ion-item *ngFor="let encuesta of encuestasIEPM; let i = index" lines="full">
+                    <ion-radio slot="start" [value]="encuesta.idOriginal"></ion-radio>
+                    <ion-label>
+                      <h3>
+                        <ion-text color="secondary">
+                          <strong>Encuesta #{{ encuesta.idMostrar }}</strong>
+                        </ion-text>
+                        <ion-badge *ngIf="i === 0" color="success" style="margin-left: 8px;">Reciente</ion-badge>
+                      </h3>
+                      <p style="margin: 4px 0;">
+                        <ion-icon name="calendar-outline" size="small"></ion-icon>
+                        {{ formatearFecha(encuesta.fechaAplicacion) }}
+                      </p>
+                    </ion-label>
+                  </ion-item>
+                </ion-radio-group>
+              </ion-list>
             </ion-card-content>
           </ion-card>
         </ion-col>
@@ -115,23 +138,23 @@
 
     <!-- Botones de navegación -->
     <div class="action-buttons no-print" style="margin: 20px 0;">
-      <ion-button expand="block" (click)="verResultadosICE()" color="primary">
+      <ion-button expand="block" (click)="verResultadosICE()" color="primary" [disabled]="!encuestaSeleccionada">
         <ion-icon name="document-text" slot="start"></ion-icon>
         Ver Resultados ICE
       </ion-button>
-      <ion-button expand="block" (click)="verResultadosIEPM()" color="secondary">
+      <ion-button expand="block" (click)="verResultadosIEPM()" color="secondary" [disabled]="!encuestaSeleccionadaIEPM">
         <ion-icon name="document-text" slot="start"></ion-icon>
         Ver Resultados IEPM
       </ion-button>
-      <ion-button expand="block" (click)="navegarAGraficaICE()" color="tertiary">
+      <ion-button expand="block" (click)="navegarAGraficaICE()" color="tertiary" [disabled]="!encuestaSeleccionada">
         <ion-icon name="bar-chart" slot="start"></ion-icon>
         Ver Gráfica ICE
       </ion-button>
-      <ion-button expand="block" (click)="navegarAGraficaIEPM()" color="warning">
+      <ion-button expand="block" (click)="navegarAGraficaIEPM()" color="warning" [disabled]="!encuestaSeleccionadaIEPM">
         <ion-icon name="pie-chart" slot="start"></ion-icon>
         Ver Gráfica IEPM
       </ion-button>
-      <ion-button expand="block" (click)="navegarAComparaciones()" color="success">
+      <ion-button expand="block" (click)="navegarAComparaciones()" color="success" [disabled]="!encuestaSeleccionada || !encuestaSeleccionadaIEPM">
         <ion-icon name="git-compare" slot="start"></ion-icon>
         Ver Comparaciones e Integración
       </ion-button>
@@ -140,7 +163,8 @@
     <!-- Mensaje de advertencia -->
     <ion-card *ngIf="!encuestaSeleccionada || !encuestaSeleccionadaIEPM" color="warning" class="no-print">
       <ion-card-content>
-        <p>Selecciona ambas encuestas para acceder a todos los resultados.</p>
+        <ion-icon name="alert-circle-outline" slot="start"></ion-icon>
+        <p><strong>Nota:</strong> Selecciona ambas encuestas (ICE e IEPM) para acceder a todos los resultados y funciones de comparación.</p>
       </ion-card-content>
     </ion-card>
 
@@ -155,14 +179,14 @@
     <div class="print-header">
       <h1>INFORME INTEGRADO DE RESULTADOS</h1>
       <p><strong>Emprendedor:</strong> {{ emprendedor?.nombre || 'No disponible' }}</p>
-      <p><strong>ID:</strong> {{ idEmprendedor }} | <strong>Fecha:</strong> {{ getCurrentDate() }}</p>
+      <p><strong>ID:</strong> {{ idEmprendedor }} | <strong>Fecha de Generación:</strong> {{ getCurrentDate() }}</p>
       <hr />
     </div>
 
     <!-- 1. RESULTADOS ICE -->
     <div class="print-section">
-      <h2>1. Resultados ICE</h2>
-      <p><strong>Encuesta:</strong> {{ getFechaAplicacion(encuestaSeleccionadaObj) || 'No seleccionada' }}</p>
+      <h2>1. Resultados ICE (Índice de Competencias Emprendedoras)</h2>
+      <p><strong>Encuesta:</strong> {{ getDescripcionEncuesta(encuestaSeleccionadaObj) }}</p>
       <div *ngIf="resultadosICE.length > 0" class="result-list">
         <div *ngFor="let item of resultadosICE" class="result-item">
           <h3>{{ item.dimension }}</h3>
@@ -204,8 +228,8 @@
 
     <!-- 3. RESULTADOS IEPM -->
     <div class="print-section">
-      <h2>3. Resultados IEPM</h2>
-      <p><strong>Encuesta:</strong> {{ getFechaAplicacion(encuestaSeleccionadaIEPMObj) || 'No seleccionada' }}</p>
+      <h2>3. Resultados IEPM (Índice de Emprendimiento y Proyecto de Mejora)</h2>
+      <p><strong>Encuesta:</strong> {{ getDescripcionEncuesta(encuestaSeleccionadaIEPMObj) }}</p>
       <div *ngIf="resultadosIEPM.length > 0" class="result-list">
         <div *ngFor="let item of resultadosIEPM" class="result-item">
           <h3>{{ item.factor }}</h3>
@@ -286,294 +310,3 @@
   </div>
 
 </ion-content>
-
-<!-- Estilos para impresión y presentación -->
-<style>
-  /* Estilos generales */
-  .loading-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 40px;
-  }
-  .title-icon {
-    margin-right: 8px;
-    color: var(--ion-color-primary);
-  }
-  .info-header {
-    background: linear-gradient(135deg, var(--ion-color-primary), var(--ion-color-secondary));
-    color: white;
-  }
-  .info-header ion-card-title,
-  .info-header ion-card-subtitle {
-    color: white;
-  }
-  .encuesta-info {
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px solid var(--ion-color-light);
-  }
-  .encuesta-info p {
-    margin: 4px 0;
-    font-size: 0.9em;
-    color: var(--ion-color-medium);
-  }
-  .action-buttons ion-button {
-    margin-bottom: 10px;
-  }
-
-  /* Estilos de la vista normal */
-  .normal-view {
-    padding: 16px;
-  }
-
-  /* Estilos de la vista de impresión */
-  .print-report {
-    padding: 40px;
-    font-family: Arial, sans-serif;
-    max-width: 21cm;
-    margin: 0 auto;
-  }
-
-  .print-header h1 {
-    text-align: center;
-    color: #2c3e50;
-    margin-bottom: 10px;
-  }
-
-  .print-header p {
-    text-align: center;
-    color: #7f8c8d;
-    margin-bottom: 20px;
-  }
-
-  .print-section {
-    margin: 30px 0;
-    page-break-inside: avoid;
-  }
-
-  .print-section h2 {
-    color: #2c3e50;
-    border-bottom: 2px solid #eee;
-    padding-bottom: 8px;
-    margin-bottom: 16px;
-  }
-
-  .result-list .result-item {
-    background: #f8f9fa;
-    padding: 16px;
-    margin-bottom: 16px;
-    border-left: 4px solid #3498db;
-    border-radius: 4px;
-  }
-
-  .result-list h3 {
-    margin: 0 0 8px 0;
-    color: #2c3e50;
-  }
-
-  .result-list ul {
-    padding-left: 20px;
-    margin: 8px 0;
-  }
-
-  .chart-container {
-    margin: 16px 0;
-    text-align: center;
-  }
-
-  .bar-chart {
-    display: flex;
-    justify-content: space-around;
-    align-items: end;
-    height: 200px;
-    padding: 20px 0;
-  }
-
-  .bar-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    flex: 1;
-    max-width: 100px;
-  }
-
-  .bar-label {
-    font-size: 0.8em;
-    text-align: center;
-    margin-bottom: 8px;
-    color: #333;
-    word-wrap: break-word;
-  }
-
-  .bar-container {
-    height: 150px;
-    width: 30px;
-    background: #ecf0f1;
-    border-radius: 4px;
-    position: relative;
-    display: flex;
-    align-items: end;
-  }
-
-  .bar {
-    width: 100%;
-    border-radius: 4px;
-    transition: height 0.5s ease;
-    min-height: 5px;
-  }
-
-  .bar-value {
-    margin-top: 8px;
-    font-weight: bold;
-    color: #333;
-    font-size: 0.9em;
-  }
-
-  .correlacion-meter {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin: 16px 0;
-  }
-
-  .meter-background {
-    flex: 1;
-    height: 20px;
-    background: #ecf0f1;
-    border-radius: 10px;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .meter-fill {
-    height: 100%;
-    border-radius: 10px;
-    transition: width 0.5s ease;
-  }
-
-  .meter-fill.positive {
-    background: linear-gradient(90deg, #2ecc71, #27ae60);
-  }
-
-  .meter-fill.negative {
-    background: linear-gradient(90deg, #e74c3c, #c0392b);
-  }
-
-  .no-data {
-    color: #95a5a6;
-    font-style: italic;
-    padding: 16px;
-    text-align: center;
-    border: 1px dashed #ddd;
-    border-radius: 8px;
-    margin: 16px 0;
-  }
-
-  .print-footer {
-    text-align: center;
-    margin-top: 40px;
-    padding-top: 20px;
-    border-top: 1px solid #ccc;
-    color: #7f8c8d;
-    font-size: 0.9em;
-  }
-
-  .print-loading {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.7);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-    color: white;
-    font-size: 1.2em;
-  }
-
-  /* ESTILOS DE IMPRESIÓN (SÓLO PARA LA IMPRESORA) */
-  @media print {
-    /* Ocultar todo lo que no sea el reporte */
-    body * {
-      visibility: hidden;
-    }
-
-    #print-report,
-    #print-report * {
-      visibility: visible;
-    }
-
-    #print-report {
-      position: absolute;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: auto;
-      padding: 0;
-      margin: 0;
-      box-shadow: none;
-    }
-
-    .no-print {
-      display: none !important;
-    }
-
-    .print-report {
-      padding: 0;
-      margin: 0;
-    }
-
-    .print-section {
-      page-break-inside: avoid;
-    }
-
-    .print-header,
-    .print-footer {
-      page-break-before: always;
-      page-break-after: always;
-    }
-
-    .bar {
-      print-color-adjust: exact;
-      -webkit-print-color-adjust: exact;
-    }
-
-    .meter-fill {
-      print-color-adjust: exact;
-      -webkit-print-color-adjust: exact;
-    }
-  }
-
-  @page {
-    margin: 1cm;
-    size: A4;
-  }
-
-  /* Métodos auxiliares para gráficas */
-  .bar-container {
-    height: 150px;
-    width: 30px;
-    background: var(--ion-color-light);
-    border-radius: 4px;
-    position: relative;
-    display: flex;
-    align-items: end;
-  }
-  .bar {
-    width: 100%;
-    border-radius: 4px;
-    transition: height 0.5s ease;
-    min-height: 5px;
-  }
-  .bar-value {
-    margin-top: 8px;
-    font-weight: bold;
-    color: var(--ion-color-dark);
-    font-size: 0.9em;
-  }
-</style>

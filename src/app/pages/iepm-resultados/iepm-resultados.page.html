@@ -65,7 +65,7 @@
         <div class="puntaje-total">
           <div class="puntaje-numero">
             <span class="numero">{{ iepmData.resultadoTotal.puntaje | number:'1.2-2' }}</span>
-            <span class="maximo">/5.0</span>
+            <span class="maximo">/1.0</span>
           </div>
           <div class="puntaje-info">
             <ion-badge 
@@ -122,7 +122,7 @@
             
             <div class="dimension-header">
               <h4>{{ dimension.dimension }}</h4>
-              <span class="puntaje">{{ dimension.puntaje | number:'1.2-2' }}/5.0</span>
+              <span class="puntaje">{{ dimension.puntaje | number:'1.2-2' }}/1.0</span>
             </div>
             
             <div class="progress-bar">
@@ -161,7 +161,7 @@
               {{ dimension.dimension }}
             </h4>
             <ion-badge [style.background-color]="getColorDimension(dimension.idDimension)">
-              {{ dimension.puntaje | number:'1.2-2' }}/5.0
+              {{ dimension.puntaje | number:'1.2-2' }}/1.0
             </ion-badge>
           </div>
           
@@ -183,7 +183,7 @@
                       <ion-icon name="people-outline" *ngIf="indicador.enfoque === 'Trabajador'"></ion-icon>
                       {{ indicador.enfoque }}
                     </ion-badge>
-                    <span class="puntaje">{{ indicador.puntaje | number:'1.2-2' }}/5.0</span>
+                    <span class="puntaje">{{ indicador.puntaje | number:'1.2-2' }}/1.0</span>
                   </div>
                 </div>
               </div>
