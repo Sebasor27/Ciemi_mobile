@@ -56,7 +56,7 @@
             <div class="iepm-score">
               <span class="score-label">IEPM Total:</span>
               <span class="score-value">{{ iepmData.resultadoTotal.puntaje | number: '1.2-2' }}</span>
-              <span class="score-max">/ 5.00</span>
+              <span class="score-max">/ 1.00</span>
             </div>
             <ion-badge [color]="iepmData.resultadoTotal.puntaje >= 4 ? 'success' : iepmData.resultadoTotal.puntaje >= 2 ? 'warning' : 'danger'" class="valoracion-badge">
               {{ iepmData.resultadoTotal.valoracion }}
@@ -134,7 +134,7 @@
                   <div class="stat-content">
                     <strong>IEPM Total</strong>
                     <p class="stat-value">{{ stats.iepmTotal | number: '1.2-2' }}</p>
-                    <span class="stat-label">/ 5.00</span>
+                    <span class="stat-label">/ 1.00</span>
                   </div>
                 </div>
               </ion-col>

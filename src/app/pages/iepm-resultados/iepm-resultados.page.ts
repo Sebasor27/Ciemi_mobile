@@ -387,7 +387,7 @@ export class IepmResultadosPage implements OnInit, OnDestroy {
       console.log('DIMENSIONES:');
       this.iepmData.porDimension.forEach(d => {
         const nivel = this.getNivelPuntaje(d.puntaje);
-        console.log(`  ${d.idDimension}. ${d.dimension}: ${d.puntaje.toFixed(2)}/5.0 - ${nivel.nivel}`);
+        console.log(`  ${d.idDimension}. ${d.dimension}: ${d.puntaje.toFixed(2)}/1.0 - ${nivel.nivel}`);
       });
       console.log('───────────────────────────────────────────────');
       console.log('INDICADORES POR DIMENSIÓN:');
@@ -396,7 +396,7 @@ export class IepmResultadosPage implements OnInit, OnDestroy {
         console.log(`  ${d.dimension}:`);
         indicadores.forEach(i => {
           const nivel = this.getNivelPuntaje(i.puntaje);
-          console.log(`    • ${i.indicador} (${i.enfoque}): ${i.puntaje.toFixed(2)}/5.0 - ${nivel.nivel}`);
+          console.log(`    • ${i.indicador} (${i.enfoque}): ${i.puntaje.toFixed(2)}/1.0 - ${nivel.nivel}`);
         });
       });
     }
