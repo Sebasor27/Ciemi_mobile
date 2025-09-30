@@ -49,6 +49,7 @@
           <ion-text>
             <p><strong>Fecha:</strong> {{ getCurrentDate() }}</p>
             <p><strong>Hora:</strong> {{ getCurrentTime() }}</p>
+            <p><strong>Total de Preguntas:</strong> 44</p>
           </ion-text>
         </div>
       </ion-card-content>
@@ -57,7 +58,8 @@
     <!-- Resultado Total -->
     <ion-card class="resultado-total-card">
       <ion-card-header>
-        <ion-card-title> Índice de Evaluación del Éxito de Puesta en Marcha (IEPM)</ion-card-title>
+        <ion-card-title>Índice de Evaluación del Éxito de Puesta en Marcha (IEPM)</ion-card-title>
+        <ion-card-subtitle>3 Dimensiones • 8 Indicadores</ion-card-subtitle>
       </ion-card-header>
       <ion-card-content>
         <div class="puntaje-total">
@@ -72,6 +74,35 @@
               {{ getNivelPuntaje(iepmData.resultadoTotal.puntaje).nivel }}
             </ion-badge>
             <p class="valoracion">{{ iepmData.resultadoTotal.valoracion }}</p>
+          </div>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Enfoques de Evaluación -->
+    <ion-card class="enfoques-card">
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="people-outline"></ion-icon>
+          Enfoques de Evaluación
+        </ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <div class="enfoques-grid">
+          <div class="enfoque-item" style="border-left-color: #FF6E6E;">
+            <ion-icon name="person-outline" style="color: #FF6E6E;"></ion-icon>
+            <h5>Cliente</h5>
+            <p>Perspectiva del cliente</p>
+          </div>
+          <div class="enfoque-item" style="border-left-color: #6A8CFF;">
+            <ion-icon name="briefcase-outline" style="color: #6A8CFF;"></ion-icon>
+            <h5>Emprendedor</h5>
+            <p>Gestión del negocio</p>
+          </div>
+          <div class="enfoque-item" style="border-left-color: #7CFFCB;">
+            <ion-icon name="people-circle-outline" style="color: #7CFFCB;"></ion-icon>
+            <h5>Trabajador</h5>
+            <p>Condiciones laborales</p>
           </div>
         </div>
       </ion-card-content>
@@ -105,6 +136,12 @@
             <div class="porcentaje-text">
               {{ dimension.porcentaje | number:'1.0-0' }}%
             </div>
+
+            <div class="dimension-footer">
+              <ion-text color="medium">
+                <small>{{ getIndicadoresPorDimension(dimension.idDimension).length }} indicadores</small>
+              </ion-text>
+            </div>
           </div>
         </div>
       </ion-card-content>
@@ -113,22 +150,42 @@
     <!-- Resultados por Indicador -->
     <ion-card class="indicadores-card">
       <ion-card-header>
-        <ion-card-title>Resultados por Indicador</ion-card-title>
+        <ion-card-title>Resultados Detallados por Indicador</ion-card-title>
+        <ion-card-subtitle>Organizados por dimensión y enfoque</ion-card-subtitle>
       </ion-card-header>
       <ion-card-content>
         <div *ngFor="let dimension of iepmData.porDimension" class="dimension-section">
-          <h4 class="dimension-title" [style.color]="getColorDimension(dimension.idDimension)">
-            {{ dimension.dimension }}
-          </h4>
+          <div class="dimension-title-header">
+            <h4 class="dimension-title" [style.color]="getColorDimension(dimension.idDimension)">
+              <ion-icon name="layers-outline"></ion-icon>
+              {{ dimension.dimension }}
+            </h4>
+            <ion-badge [style.background-color]="getColorDimension(dimension.idDimension)">
+              {{ dimension.puntaje | number:'1.2-2' }}/5.0
+            </ion-badge>
+          </div>
           
           <div class="indicadores-list">
             <div 
               *ngFor="let indicador of getIndicadoresPorDimension(dimension.idDimension)"
               class="indicador-item">
               
-              <div class="indicador-info">
-                <h5>{{ indicador.indicador }}</h5>
-                <span class="puntaje">{{ indicador.puntaje | number:'1.2-2' }}/5.0</span>
+              <div class="indicador-header">
+                <div class="indicador-info">
+                  <h5>{{ indicador.indicador }}</h5>
+                  <div class="indicador-meta">
+                    <ion-badge 
+                      [style.background-color]="getColorEnfoque(indicador.enfoque)"
+                      size="small"
+                      class="enfoque-badge">
+                      <ion-icon name="person-outline" *ngIf="indicador.enfoque === 'Cliente'"></ion-icon>
+                      <ion-icon name="briefcase-outline" *ngIf="indicador.enfoque === 'Emprendedor'"></ion-icon>
+                      <ion-icon name="people-outline" *ngIf="indicador.enfoque === 'Trabajador'"></ion-icon>
+                      {{ indicador.enfoque }}
+                    </ion-badge>
+                    <span class="puntaje">{{ indicador.puntaje | number:'1.2-2' }}/5.0</span>
+                  </div>
+                </div>
               </div>
               
               <div class="progress-bar mini">
@@ -139,12 +196,15 @@
                 </div>
               </div>
               
-              <div class="nivel-indicador">
-                <ion-badge 
-                  [style.background-color]="getNivelPuntaje(indicador.puntaje).color"
-                  size="small">
-                  {{ getNivelPuntaje(indicador.puntaje).nivel }}
-                </ion-badge>
+              <div class="indicador-footer">
+                <div class="nivel-indicador">
+                  <ion-badge 
+                    [style.background-color]="getNivelPuntaje(indicador.puntaje).color"
+                    size="small">
+                    {{ getNivelPuntaje(indicador.puntaje).nivel }}
+                  </ion-badge>
+                </div>
+                <span class="porcentaje-text">{{ indicador.porcentaje | number:'1.0-0' }}%</span>
               </div>
             </div>
           </div>
@@ -157,17 +217,73 @@
       <ion-card-header>
         <ion-card-title>
           <ion-icon name="bulb-outline"></ion-icon>
-          Recomendaciones
+          Recomendaciones y Plan de Acción
         </ion-card-title>
-        <ion-card-subtitle>Rango: {{ iepmData.accionRecomendada.rango }}</ion-card-subtitle>
+        <ion-card-subtitle>Basado en el rango: {{ iepmData.accionRecomendada.rango }}</ion-card-subtitle>
       </ion-card-header>
       <ion-card-content>
         <div class="recomendacion-content">
-          <h4>Descripción:</h4>
-          <p>{{ iepmData.accionRecomendada.descripcion }}</p>
+          <div class="recomendacion-section">
+            <h4>
+              <ion-icon name="information-circle-outline"></ion-icon>
+              Diagnóstico:
+            </h4>
+            <p>{{ iepmData.accionRecomendada.descripcion }}</p>
+          </div>
           
-          <h4>Recomendaciones específicas:</h4>
-          <p>{{ iepmData.accionRecomendada.recomendaciones }}</p>
+          <ion-item lines="none" class="divider-item">
+            <ion-icon name="arrow-down-outline" slot="start"></ion-icon>
+          </ion-item>
+
+          <div class="recomendacion-section">
+            <h4>
+              <ion-icon name="checkmark-circle-outline"></ion-icon>
+              Acciones Recomendadas:
+            </h4>
+            <p>{{ iepmData.accionRecomendada.recomendaciones }}</p>
+          </div>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Resumen Estadístico -->
+    <ion-card class="resumen-card">
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="stats-chart-outline"></ion-icon>
+          Resumen Estadístico
+        </ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <ion-icon name="layers-outline" color="primary"></ion-icon>
+            <div class="stat-content">
+              <h5>{{ iepmData.porDimension.length }}</h5>
+              <p>Dimensiones</p>
+            </div>
+          </div>
+          <div class="stat-item">
+            <ion-icon name="analytics-outline" color="secondary"></ion-icon>
+            <div class="stat-content">
+              <h5>{{ iepmData.porIndicador.length }}</h5>
+              <p>Indicadores</p>
+            </div>
+          </div>
+          <div class="stat-item">
+            <ion-icon name="help-circle-outline" color="tertiary"></ion-icon>
+            <div class="stat-content">
+              <h5>44</h5>
+              <p>Preguntas</p>
+            </div>
+          </div>
+          <div class="stat-item">
+            <ion-icon name="people-outline" color="success"></ion-icon>
+            <div class="stat-content">
+              <h5>3</h5>
+              <p>Enfoques</p>
+            </div>
+          </div>
         </div>
       </ion-card-content>
     </ion-card>
@@ -179,7 +295,16 @@
         color="primary" 
         (click)="navegarAGrafica()">
         <ion-icon name="bar-chart-outline" slot="start"></ion-icon>
-        Ver Gráficas
+        Ver Gráficas Detalladas
+      </ion-button>
+      
+      <ion-button 
+        expand="block" 
+        fill="outline" 
+        color="primary"
+        (click)="imprimir()">
+        <ion-icon name="print-outline" slot="start"></ion-icon>
+        Imprimir Reporte
       </ion-button>
       
       <ion-button 
@@ -187,8 +312,8 @@
         fill="outline" 
         color="medium" 
         (click)="navigateBack()">
-        <ion-icon name="home-outline" slot="start"></ion-icon>
-        Regresar
+        <ion-icon name="arrow-back-outline" slot="start"></ion-icon>
+        Regresar a Resultados
       </ion-button>
     </div>
   </div>

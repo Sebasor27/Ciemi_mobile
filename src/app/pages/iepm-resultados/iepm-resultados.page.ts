@@ -32,6 +32,7 @@ interface IepmTransformado {
     indicador: string;
     idDimension: number;
     dimension: string;
+    enfoque: string;
     puntaje: number;
     porcentaje: number;
   }>;
@@ -45,7 +46,8 @@ interface IepmTransformado {
 interface IndicadorInfo {
   idIndicador: number;
   nombre: string;
-  destinatario?: string;
+  enfoque: 'Cliente' | 'Emprendedor' | 'Trabajador';
+  idDimension: number;
 }
 
 interface DimensionInfo {
@@ -74,23 +76,27 @@ export class IepmResultadosPage implements OnInit, OnDestroy {
   isLoading = true;
   error: string | null = null;
 
-  // Información de referencia
+  // Información de referencia actualizada (8 indicadores en 3 dimensiones)
   private readonly indicadoresInfo: IndicadorInfo[] = [
-    { idIndicador: 1, nombre: 'Capacidad de Planificación Financiera', destinatario: 'Emprendedor' },
-    { idIndicador: 2, nombre: 'Gestión de Recursos Económicos', destinatario: 'Emprendedor' },
-    { idIndicador: 3, nombre: 'Análisis de Viabilidad Económica', destinatario: 'Emprendedor' },
-    { idIndicador: 4, nombre: 'Eficiencia Operacional', destinatario: 'Emprendedor' },
-    { idIndicador: 5, nombre: 'Gestión de Procesos', destinatario: 'Emprendedor' },
-    { idIndicador: 6, nombre: 'Control de Calidad', destinatario: 'Emprendedor' },
-    { idIndicador: 7, nombre: 'Innovación Tecnológica', destinatario: 'Emprendedor' },
-    { idIndicador: 8, nombre: 'Desarrollo de Productos', destinatario: 'Emprendedor' },
-    { idIndicador: 9, nombre: 'Adaptación al Cambio', destinatario: 'Emprendedor' }
+    // Dimensión 1: Calidad y Eficiencia Laboral (3 indicadores)
+    { idIndicador: 1, nombre: 'Índice de Satisfacción del Cliente', enfoque: 'Cliente', idDimension: 1 },
+    { idIndicador: 2, nombre: 'Ingresos', enfoque: 'Emprendedor', idDimension: 1 },
+    { idIndicador: 3, nombre: 'Tiempo de Obtención de Permisos', enfoque: 'Emprendedor', idDimension: 1 },
+    
+    // Dimensión 2: Infraestructura Laboral (3 indicadores)
+    { idIndicador: 4, nombre: 'Accesibilidad de la Instalación', enfoque: 'Cliente', idDimension: 2 },
+    { idIndicador: 5, nombre: 'Gastos de Transportación', enfoque: 'Trabajador', idDimension: 2 },
+    { idIndicador: 6, nombre: 'Comodidad del Trabajador', enfoque: 'Trabajador', idDimension: 2 },
+    
+    // Dimensión 3: Tecnología e Innovación (2 indicadores)
+    { idIndicador: 7, nombre: 'Capacidad Tecnológica', enfoque: 'Emprendedor', idDimension: 3 },
+    { idIndicador: 8, nombre: 'Liderazgo Creativo con Énfasis Innovador', enfoque: 'Emprendedor', idDimension: 3 }
   ];
 
   private readonly dimensionesInfo: DimensionInfo[] = [
-    { idDimension: 1, nombre: 'Dimensión Económica' },
-    { idDimension: 2, nombre: 'Dimensión Operacional' },
-    { idDimension: 3, nombre: 'Dimensión de Innovación' }
+    { idDimension: 1, nombre: 'Calidad y Eficiencia Laboral' },
+    { idDimension: 2, nombre: 'Infraestructura Laboral' },
+    { idDimension: 3, nombre: 'Tecnología e Innovación' }
   ];
 
   constructor(
@@ -198,14 +204,18 @@ export class IepmResultadosPage implements OnInit, OnDestroy {
         puntaje: d.valor,
         porcentaje: (d.valor / 5) * 100
       })),
-      porIndicador: (data.indicadores || []).map((i: any) => ({
-        idIndicador: i.idIndicador,
-        indicador: this.getNombreIndicador(i.idIndicador),
-        idDimension: Math.ceil(i.idIndicador / 3),
-        dimension: this.getNombreDimension(Math.ceil(i.idIndicador / 3)),
-        puntaje: i.valor,
-        porcentaje: (i.valor / 5) * 100
-      })),
+      porIndicador: (data.indicadores || []).map((i: any) => {
+        const indicadorInfo = this.getIndicadorInfo(i.idIndicador);
+        return {
+          idIndicador: i.idIndicador,
+          indicador: indicadorInfo.nombre,
+          idDimension: indicadorInfo.idDimension,
+          dimension: this.getNombreDimension(indicadorInfo.idDimension),
+          enfoque: indicadorInfo.enfoque,
+          puntaje: i.valor,
+          porcentaje: (i.valor / 5) * 100
+        };
+      }),
       accionRecomendada: {
         descripcion: data.accionMejora?.descripcion || 'N/A',
         recomendaciones: data.accionMejora?.recomendaciones || 'N/A',
@@ -214,15 +224,33 @@ export class IepmResultadosPage implements OnInit, OnDestroy {
     };
   }
 
-  // MÉTODOS DE OBTENCIÓN DE NOMBRES
-  getNombreIndicador(idIndicador: number): string {
+  // MÉTODOS DE OBTENCIÓN DE INFORMACIÓN
+  getIndicadorInfo(idIndicador: number): IndicadorInfo {
     const indicador = this.indicadoresInfo.find(i => i.idIndicador === idIndicador);
-    return indicador?.nombre || `Indicador ${idIndicador}`;
+    return indicador || {
+      idIndicador,
+      nombre: `Indicador ${idIndicador}`,
+      enfoque: 'Emprendedor',
+      idDimension: 1
+    };
+  }
+
+  getNombreIndicador(idIndicador: number): string {
+    return this.getIndicadorInfo(idIndicador).nombre;
   }
 
   getNombreDimension(idDimension: number): string {
     const dimension = this.dimensionesInfo.find(d => d.idDimension === idDimension);
     return dimension?.nombre || `Dimensión ${idDimension}`;
+  }
+
+  getEnfoqueName(enfoque: string): string {
+    const enfoques: { [key: string]: string } = {
+      'Cliente': 'Cliente',
+      'Emprendedor': 'Emprendedor',
+      'Trabajador': 'Trabajador'
+    };
+    return enfoques[enfoque] || enfoque;
   }
 
   // MÉTODOS DE CÁLCULO Y ANÁLISIS
@@ -243,13 +271,19 @@ export class IepmResultadosPage implements OnInit, OnDestroy {
     return colores[idDimension - 1] || '#999999';
   }
 
+  getColorEnfoque(enfoque: string): string {
+    const colores: { [key: string]: string } = {
+      'Cliente': '#FF6E6E',
+      'Emprendedor': '#6A8CFF',
+      'Trabajador': '#7CFFCB'
+    };
+    return colores[enfoque] || '#999999';
+  }
+
   getIndicadoresPorDimension(idDimension: number): any[] {
     if (!this.iepmData?.porIndicador) return [];
     
-    return this.iepmData.porIndicador.filter(ind => {
-      const dimensionCalculada = Math.ceil(ind.idIndicador / 3);
-      return dimensionCalculada === idDimension;
-    });
+    return this.iepmData.porIndicador.filter(ind => ind.idDimension === idDimension);
   }
 
   // MÉTODOS DE NAVEGACIÓN
@@ -277,11 +311,18 @@ export class IepmResultadosPage implements OnInit, OnDestroy {
 
   // FORMATEO DE FECHAS
   getCurrentDate(): string {
-    return new Date().toLocaleDateString();
+    return new Date().toLocaleDateString('es-ES', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
   }
 
   getCurrentTime(): string {
-    return new Date().toLocaleTimeString();
+    return new Date().toLocaleTimeString('es-ES', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   }
 
   // MANEJO DE ERRORES Y NOTIFICACIONES
@@ -317,16 +358,43 @@ export class IepmResultadosPage implements OnInit, OnDestroy {
 
   // DIAGNÓSTICO DEL COMPONENTE
   diagnosticarEstado(): void {
-    console.log('DIAGNÓSTICO - IEPM RESULTADOS:');
-    console.log('ID Emprendedor:', this.idEmprendedor);
-    console.log('ID Encuesta:', this.idEncuesta);
-    console.log('Emprendedor cargado:', !!this.emprendedor);
-    console.log('Datos IEPM cargados:', !!this.iepmData);
-    console.log('Puntaje IEPM:', this.iepmData?.resultadoTotal?.puntaje);
-    console.log('Dimensiones:', this.iepmData?.porDimension?.length || 0);
-    console.log('Indicadores:', this.iepmData?.porIndicador?.length || 0);
-    console.log('Loading:', this.isLoading);
-    console.log('Error:', this.error);
+    console.log('═══════════════════════════════════════════════');
+    console.log('DIAGNÓSTICO - IEPM RESULTADOS');
+    console.log('═══════════════════════════════════════════════');
+    console.log('PARÁMETROS:');
+    console.log('  • ID Emprendedor:', this.idEmprendedor);
+    console.log('  • ID Encuesta:', this.idEncuesta);
+    console.log('───────────────────────────────────────────────');
+    console.log('DATOS CARGADOS:');
+    console.log('  • Emprendedor:', !!this.emprendedor, this.emprendedor?.nombre || 'N/A');
+    console.log('  • Datos IEPM:', !!this.iepmData);
+    console.log('───────────────────────────────────────────────');
+    if (this.iepmData) {
+      console.log('RESULTADOS IEPM:');
+      console.log('  • Puntaje Total:', this.iepmData.resultadoTotal.puntaje);
+      console.log('  • Valoración:', this.iepmData.resultadoTotal.valoracion);
+      console.log('  • Dimensiones:', this.iepmData.porDimension.length);
+      console.log('  • Indicadores:', this.iepmData.porIndicador.length);
+      console.log('───────────────────────────────────────────────');
+      console.log('DIMENSIONES:');
+      this.iepmData.porDimension.forEach(d => {
+        console.log(`  ${d.idDimension}. ${d.dimension}: ${d.puntaje.toFixed(2)}/5.0`);
+      });
+      console.log('───────────────────────────────────────────────');
+      console.log('INDICADORES POR DIMENSIÓN:');
+      this.iepmData.porDimension.forEach(d => {
+        const indicadores = this.getIndicadoresPorDimension(d.idDimension);
+        console.log(`  ${d.dimension}:`);
+        indicadores.forEach(i => {
+          console.log(`    • ${i.indicador} (${i.enfoque}): ${i.puntaje.toFixed(2)}/5.0`);
+        });
+      });
+    }
+    console.log('───────────────────────────────────────────────');
+    console.log('ESTADOS:');
+    console.log('  • Loading:', this.isLoading);
+    console.log('  • Error:', this.error || 'Ninguno');
+    console.log('═══════════════════════════════════════════════');
   }
 
   forzarRedibujado(): void {

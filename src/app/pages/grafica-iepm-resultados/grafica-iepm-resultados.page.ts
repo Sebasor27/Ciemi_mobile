@@ -34,9 +34,22 @@ interface IepmData {
     indicador: string;
     idDimension: number;
     dimension: string;
+    enfoque: string;
     puntaje: number;
     porcentaje: number;
   }>;
+}
+
+interface IndicadorInfo {
+  idIndicador: number;
+  nombre: string;
+  enfoque: 'Cliente' | 'Emprendedor' | 'Trabajador';
+  idDimension: number;
+}
+
+interface DimensionInfo {
+  idDimension: number;
+  nombre: string;
 }
 
 type GraficoTipo = 'bar' | 'pie' | 'doughnut' | 'radar';
@@ -66,29 +79,33 @@ export class GraficaIepmResultadosPage implements OnInit, AfterViewInit, OnDestr
   error: string | null = null;
   tipoGrafico: GraficoTipo = 'bar';
 
-  // Información de referencia
-  private readonly indicadoresInfo = [
-    { idIndicador: 1, nombre: 'Capacidad de Planificación Financiera' },
-    { idIndicador: 2, nombre: 'Gestión de Recursos Económicos' },
-    { idIndicador: 3, nombre: 'Análisis de Viabilidad Económica' },
-    { idIndicador: 4, nombre: 'Eficiencia Operacional' },
-    { idIndicador: 5, nombre: 'Gestión de Procesos' },
-    { idIndicador: 6, nombre: 'Control de Calidad' },
-    { idIndicador: 7, nombre: 'Innovación Tecnológica' },
-    { idIndicador: 8, nombre: 'Desarrollo de Productos' },
-    { idIndicador: 9, nombre: 'Adaptación al Cambio' }
+  // Información de referencia actualizada (8 indicadores en 3 dimensiones)
+  private readonly indicadoresInfo: IndicadorInfo[] = [
+    // Dimensión 1: Calidad y Eficiencia Laboral (3 indicadores)
+    { idIndicador: 1, nombre: 'Índice de Satisfacción del Cliente', enfoque: 'Cliente', idDimension: 1 },
+    { idIndicador: 2, nombre: 'Ingresos', enfoque: 'Emprendedor', idDimension: 1 },
+    { idIndicador: 3, nombre: 'Tiempo de Obtención de Permisos', enfoque: 'Emprendedor', idDimension: 1 },
+    
+    // Dimensión 2: Infraestructura Laboral (3 indicadores)
+    { idIndicador: 4, nombre: 'Accesibilidad de la Instalación', enfoque: 'Cliente', idDimension: 2 },
+    { idIndicador: 5, nombre: 'Gastos de Transportación', enfoque: 'Trabajador', idDimension: 2 },
+    { idIndicador: 6, nombre: 'Comodidad del Trabajador', enfoque: 'Trabajador', idDimension: 2 },
+    
+    // Dimensión 3: Tecnología e Innovación (2 indicadores)
+    { idIndicador: 7, nombre: 'Capacidad Tecnológica', enfoque: 'Emprendedor', idDimension: 3 },
+    { idIndicador: 8, nombre: 'Liderazgo Creativo con Énfasis Innovador', enfoque: 'Emprendedor', idDimension: 3 }
   ];
 
-  private readonly dimensionesInfo = [
-    { idDimension: 1, nombre: 'Dimensión Económica' },
-    { idDimension: 2, nombre: 'Dimensión Operacional' },
-    { idDimension: 3, nombre: 'Dimensión de Innovación' }
+  private readonly dimensionesInfo: DimensionInfo[] = [
+    { idDimension: 1, nombre: 'Calidad y Eficiencia Laboral' },
+    { idDimension: 2, nombre: 'Infraestructura Laboral' },
+    { idDimension: 3, nombre: 'Tecnología e Innovación' }
   ];
 
   readonly coloresDimensiones = ['#FF6E6E', '#6A8CFF', '#7CFFCB'];
   readonly coloresIndicadores = [
-    '#e91e63', '#9c27b0', '#3f51b5', '#2196f3', '#00bcd4',
-    '#009688', '#4caf50', '#8bc34a', '#cddc39'
+    '#e91e63', '#9c27b0', '#3f51b5', '#2196f3', 
+    '#00bcd4', '#009688', '#4caf50', '#8bc34a'
   ];
 
   constructor(
@@ -106,7 +123,6 @@ export class GraficaIepmResultadosPage implements OnInit, AfterViewInit, OnDestr
   }
 
   ngAfterViewInit(): void {
-    // Esperar un poco para asegurarse de que el canvas esté disponible
     setTimeout(() => {
       if (this.iepmData && !this.isLoading && !this.error) {
         this.createChart();
@@ -186,7 +202,6 @@ export class GraficaIepmResultadosPage implements OnInit, AfterViewInit, OnDestr
 
       this.iepmData = this.transformIEPMData(data);
 
-      // Crear gráfico después de cargar datos
       setTimeout(() => {
         if (this.iepmData) {
           this.createChart();
@@ -212,20 +227,33 @@ export class GraficaIepmResultadosPage implements OnInit, AfterViewInit, OnDestr
         puntaje: d.valor,
         porcentaje: (d.valor / 5) * 100
       })),
-      porIndicador: (data.indicadores || []).map((i: any) => ({
-        idIndicador: i.idIndicador,
-        indicador: this.getNombreIndicador(i.idIndicador),
-        idDimension: Math.ceil(i.idIndicador / 3),
-        dimension: this.getNombreDimension(Math.ceil(i.idIndicador / 3)),
-        puntaje: i.valor,
-        porcentaje: (i.valor / 5) * 100
-      }))
+      porIndicador: (data.indicadores || []).map((i: any) => {
+        const indicadorInfo = this.getIndicadorInfo(i.idIndicador);
+        return {
+          idIndicador: i.idIndicador,
+          indicador: indicadorInfo.nombre,
+          idDimension: indicadorInfo.idDimension,
+          dimension: this.getNombreDimension(indicadorInfo.idDimension),
+          enfoque: indicadorInfo.enfoque,
+          puntaje: i.valor,
+          porcentaje: (i.valor / 5) * 100
+        };
+      })
+    };
+  }
+
+  private getIndicadorInfo(idIndicador: number): IndicadorInfo {
+    const indicador = this.indicadoresInfo.find(i => i.idIndicador === idIndicador);
+    return indicador || {
+      idIndicador,
+      nombre: `Indicador ${idIndicador}`,
+      enfoque: 'Emprendedor',
+      idDimension: 1
     };
   }
 
   private getNombreIndicador(idIndicador: number): string {
-    const indicador = this.indicadoresInfo.find(i => i.idIndicador === idIndicador);
-    return indicador?.nombre || `Indicador ${idIndicador}`;
+    return this.getIndicadorInfo(idIndicador).nombre;
   }
 
   private getNombreDimension(idDimension: number): string {
@@ -268,10 +296,7 @@ export class GraficaIepmResultadosPage implements OnInit, AfterViewInit, OnDestr
     if (!this.iepmData) {
       return {
         type: 'bar',
-        data: {
-          labels: [],
-          datasets: []
-        },
+        data: { labels: [], datasets: [] },
         options: {}
       };
     }
@@ -285,7 +310,7 @@ export class GraficaIepmResultadosPage implements OnInit, AfterViewInit, OnDestr
           data: this.iepmData.porDimension.map(d => d.puntaje),
           backgroundColor: this.coloresDimensiones,
           borderColor: this.coloresDimensiones,
-          borderWidth: 1
+          borderWidth: 2
         }]
       },
       options: {
@@ -294,7 +319,7 @@ export class GraficaIepmResultadosPage implements OnInit, AfterViewInit, OnDestr
         plugins: {
           title: {
             display: true,
-            text: 'Resultados IEPM por Dimensiones',
+            text: 'Resultados IEPM por Dimensiones (44 Preguntas)',
             font: { size: 16, weight: 'bold' }
           },
           legend: {
@@ -312,6 +337,7 @@ export class GraficaIepmResultadosPage implements OnInit, AfterViewInit, OnDestr
           y: {
             beginAtZero: true,
             max: 5,
+            ticks: { stepSize: 1 },
             title: { display: true, text: 'Puntaje' }
           },
           x: {
@@ -326,10 +352,7 @@ export class GraficaIepmResultadosPage implements OnInit, AfterViewInit, OnDestr
     if (!this.iepmData) {
       return {
         type: this.tipoGrafico === 'doughnut' ? 'doughnut' : 'pie',
-        data: {
-          labels: [],
-          datasets: []
-        },
+        data: { labels: [], datasets: [] },
         options: {}
       };
     }
@@ -352,7 +375,7 @@ export class GraficaIepmResultadosPage implements OnInit, AfterViewInit, OnDestr
         plugins: {
           title: {
             display: true,
-            text: 'Distribución de Indicadores IEPM',
+            text: 'Distribución de 8 Indicadores IEPM',
             font: { size: 16, weight: 'bold' }
           },
           legend: {
@@ -366,7 +389,12 @@ export class GraficaIepmResultadosPage implements OnInit, AfterViewInit, OnDestr
           tooltip: {
             callbacks: {
               label: (context: any) => {
-                return `${context.label}: ${context.parsed.toFixed(2)} / 5.00`;
+                const indicador = this.iepmData?.porIndicador[context.dataIndex];
+                return [
+                  `${context.label}`,
+                  `Enfoque: ${indicador?.enfoque}`,
+                  `Puntaje: ${context.parsed.toFixed(2)} / 5.00`
+                ];
               }
             }
           }
@@ -379,10 +407,7 @@ export class GraficaIepmResultadosPage implements OnInit, AfterViewInit, OnDestr
     if (!this.iepmData) {
       return {
         type: 'radar',
-        data: {
-          labels: [],
-          datasets: []
-        },
+        data: { labels: [], datasets: [] },
         options: {}
       };
     }
@@ -409,7 +434,7 @@ export class GraficaIepmResultadosPage implements OnInit, AfterViewInit, OnDestr
         plugins: {
           title: {
             display: true,
-            text: 'Perfil Radar IEPM',
+            text: 'Perfil Radar IEPM - 3 Dimensiones',
             font: { size: 16, weight: 'bold' }
           }
         },
@@ -417,9 +442,7 @@ export class GraficaIepmResultadosPage implements OnInit, AfterViewInit, OnDestr
           r: {
             beginAtZero: true,
             max: 5,
-            ticks: {
-              stepSize: 1
-            }
+            ticks: { stepSize: 1 }
           }
         }
       }
@@ -449,13 +472,12 @@ export class GraficaIepmResultadosPage implements OnInit, AfterViewInit, OnDestr
     }
   }
 
-  // Métodos de navegación
   navigateToHome(): void {
     this.router.navigate(['/home'])
       .catch(error => this.showToast('Error en la navegación', 'danger'));
   }
 
-    navegarAResultados(): void {
+  navegarAResultados(): void {
     this.router.navigate(['/informacion-resultados', this.idEmprendedor])
       .catch(error => this.showToast('Error en la navegación', 'danger'));
   }
@@ -504,7 +526,6 @@ export class GraficaIepmResultadosPage implements OnInit, AfterViewInit, OnDestr
     await toast.present();
   }
 
-  // Método para obtener estadísticas
   getEstadisticas() {
     if (!this.iepmData?.porDimension.length) return null;
 
@@ -517,8 +538,14 @@ export class GraficaIepmResultadosPage implements OnInit, AfterViewInit, OnDestr
       promedio: Number(promedio.toFixed(3)),
       maximo: Number(maximo.toFixed(3)),
       minimo: Number(minimo.toFixed(3)),
-      total: this.iepmData.porDimension.length,
+      totalDimensiones: this.iepmData.porDimension.length,
+      totalIndicadores: this.iepmData.porIndicador.length,
       iepmTotal: this.iepmData.resultadoTotal.puntaje
     };
+  }
+
+  getIndicadoresPorEnfoque(enfoque: string) {
+    if (!this.iepmData?.porIndicador) return [];
+    return this.iepmData.porIndicador.filter(i => i.enfoque === enfoque);
   }
 }

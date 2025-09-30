@@ -65,11 +65,9 @@ export class InformacionResultadosPage implements OnInit, OnDestroy {
   encuestaSeleccionada: number | null = null;
   encuestaSeleccionadaIEPM: number | null = null;
 
-  // Propiedades para el template
   encuestaSeleccionadaObj: Encuesta | null = null;
   encuestaSeleccionadaIEPMObj: Encuesta | null = null;
 
-  // Propiedades faltantes para la vista de impresión
   isPrinting: boolean = false;
   resultadosICE: ResultadoICE[] = [];
   resultadosIEPM: ResultadoIEPM[] = [];
@@ -193,8 +191,6 @@ export class InformacionResultadosPage implements OnInit, OnDestroy {
     this.syncEncuestaObjects();
   }
 
-  // MÉTODOS DE NAVEGACIÓN
-  
   verResultadosICE(): void {
     if (!this.encuestaSeleccionada) {
       this.showToast('Selecciona una encuesta ICE', 'warning');
@@ -245,8 +241,6 @@ export class InformacionResultadosPage implements OnInit, OnDestroy {
     });
   }
 
-  // MÉTODOS DE IMPRESIÓN Y DATOS PARA VISTA COMPLETA
-  
   async printPage(): Promise<void> {
     if (!this.encuestaSeleccionada || !this.encuestaSeleccionadaIEPM) {
       this.showToast('Selecciona ambas encuestas para imprimir el reporte completo', 'warning');
@@ -256,7 +250,6 @@ export class InformacionResultadosPage implements OnInit, OnDestroy {
     try {
       this.isPrinting = true;
       
-      // Cargar todos los datos necesarios para la impresión
       await Promise.all([
         this.loadResultadosICE(),
         this.loadResultadosIEPM(),
@@ -265,7 +258,6 @@ export class InformacionResultadosPage implements OnInit, OnDestroy {
         this.loadComparaciones()
       ]);
 
-      // Esperar un momento para que se renderice la vista
       setTimeout(() => {
         window.print();
         this.isPrinting = false;
@@ -274,118 +266,236 @@ export class InformacionResultadosPage implements OnInit, OnDestroy {
     } catch (error) {
       this.isPrinting = false;
       this.showToast('Error al generar el reporte', 'danger');
+      console.error('Error en printPage:', error);
     }
   }
 
   private async loadResultadosICE(): Promise<void> {
-    if (!this.encuestaSeleccionada) return;
+    if (!this.encuestaSeleccionada || !this.idEmprendedor) return;
     
     try {
-      // Mock data temporal - reemplazar con servicio real
-      this.resultadosICE = [
-        {
-          dimension: "Innovación",
-          puntaje: 85,
-          nivel: "Alto",
-          descripcion: "Excelente capacidad de innovación",
-          recomendaciones: ["Continuar desarrollando ideas creativas", "Buscar financiamiento para proyectos"]
-        },
-        {
-          dimension: "Creatividad", 
-          puntaje: 78,
-          nivel: "Medio-Alto",
-          descripcion: "Buena creatividad empresarial",
-          recomendaciones: ["Participar en workshops de creatividad"]
-        },
-        {
-          dimension: "Emprendimiento",
-          puntaje: 92,
-          nivel: "Alto",
-          descripcion: "Fuerte espíritu emprendedor",
-          recomendaciones: ["Considerar mentoría empresarial"]
-        }
-      ];
+      const data = await firstValueFrom(
+        this.resultadosService.getResultadosResumen(
+          Number(this.idEmprendedor), 
+          this.encuestaSeleccionada
+        ).pipe(takeUntil(this.destroy$))
+      );
+      
+      this.resultadosICE = data.resultados.map((resultado: any) => ({
+        dimension: resultado.dimension || resultado.nombre || 'Sin nombre',
+        puntaje: resultado.puntaje || resultado.valor || 0,
+        nivel: this.getNivelICE(resultado.puntaje || resultado.valor || 0),
+        descripcion: resultado.descripcion || 'Sin descripción',
+        recomendaciones: Array.isArray(resultado.recomendaciones) 
+          ? resultado.recomendaciones 
+          : (resultado.recomendaciones ? [resultado.recomendaciones] : [])
+      }));
+      
+      console.log('Resultados ICE cargados:', this.resultadosICE);
     } catch (error) {
+      console.error('Error cargando resultados ICE:', error);
       this.resultadosICE = [];
     }
   }
 
   private async loadResultadosIEPM(): Promise<void> {
-    if (!this.encuestaSeleccionadaIEPM) return;
+    if (!this.encuestaSeleccionadaIEPM || !this.idEmprendedor) return;
     
     try {
-      // Mock data temporal - reemplazar con servicio real
-      this.resultadosIEPM = [
-        {
-          factor: "Motivación",
-          puntaje: 88,
-          nivel: "Alto",
-          descripcion: "Alta motivación empresarial",
-          recomendaciones: ["Mantener el enfoque en objetivos"]
-        },
-        {
-          factor: "Perseverancia",
-          puntaje: 75,
-          nivel: "Medio-Alto", 
-          descripcion: "Buena capacidad de persistencia",
-          recomendaciones: ["Desarrollar técnicas de resiliencia"]
-        }
-      ];
+      const data = await firstValueFrom(
+        this.resultadosService.getResultadosIEPM(
+          Number(this.idEmprendedor),
+          this.encuestaSeleccionadaIEPM
+        ).pipe(takeUntil(this.destroy$))
+      );
+      
+      this.resultadosIEPM = data.dimensiones.map((dim: any) => ({
+        factor: this.getNombreDimension(dim.idDimension),
+        puntaje: dim.valor || 0,
+        nivel: this.getNivelIEPM(dim.valor || 0),
+        descripcion: data.accionMejora?.descripcion || 'Sin descripción',
+        recomendaciones: this.getRecomendacionesPorDimension(dim.idDimension, data.accionMejora?.recomendaciones)
+      }));
+      
+      console.log('Resultados IEPM cargados:', this.resultadosIEPM);
     } catch (error) {
+      console.error('Error cargando resultados IEPM:', error);
       this.resultadosIEPM = [];
     }
   }
 
   private async loadDatosGraficaICE(): Promise<void> {
-    if (!this.encuestaSeleccionada) return;
+    if (!this.encuestaSeleccionada || !this.idEmprendedor) return;
     
     try {
-      // Mock data temporal - reemplazar con servicio real
+      const data = await firstValueFrom(
+        this.resultadosService.getResultadosResumen(
+          Number(this.idEmprendedor),
+          this.encuestaSeleccionada
+        ).pipe(takeUntil(this.destroy$))
+      );
+      
       this.datosGraficaICE = {
-        labels: ["Innovación", "Creatividad", "Emprendimiento"],
-        data: [85, 78, 92],
-        colores: ["#3498db", "#e74c3c", "#2ecc71"]
+        labels: data.resultados.map((r: any) => r.dimension || r.nombre || 'Sin nombre'),
+        data: data.resultados.map((r: any) => r.puntaje || r.valor || 0),
+        colores: this.generarColores(data.resultados.length)
       };
+      
+      console.log('Datos gráfica ICE:', this.datosGraficaICE);
     } catch (error) {
+      console.error('Error cargando gráfica ICE:', error);
       this.datosGraficaICE = null;
     }
   }
 
   private async loadDatosGraficaIEPM(): Promise<void> {
-    if (!this.encuestaSeleccionadaIEPM) return;
+    if (!this.encuestaSeleccionadaIEPM || !this.idEmprendedor) return;
     
     try {
-      // Mock data temporal - reemplazar con servicio real
+      const data = await firstValueFrom(
+        this.resultadosService.getResultadosIEPM(
+          Number(this.idEmprendedor),
+          this.encuestaSeleccionadaIEPM
+        ).pipe(takeUntil(this.destroy$))
+      );
+      
       this.datosGraficaIEPM = {
-        labels: ["Motivación", "Perseverancia"],
-        data: [88, 75],
-        colores: ["#9b59b6", "#f39c12"]
+        labels: data.dimensiones.map((d: any) => this.getNombreDimension(d.idDimension)),
+        data: data.dimensiones.map((d: any) => d.valor || 0),
+        colores: this.generarColores(data.dimensiones.length)
       };
+      
+      console.log('Datos gráfica IEPM:', this.datosGraficaIEPM);
     } catch (error) {
+      console.error('Error cargando gráfica IEPM:', error);
       this.datosGraficaIEPM = null;
     }
   }
 
   private async loadComparaciones(): Promise<void> {
-    if (!this.encuestaSeleccionada || !this.encuestaSeleccionadaIEPM) return;
+    if (!this.encuestaSeleccionada || !this.encuestaSeleccionadaIEPM || !this.idEmprendedor) return;
     
     try {
-      // Mock data temporal - reemplazar con servicio real
+      const [dataICE, dataIEPM] = await Promise.all([
+        firstValueFrom(
+          this.resultadosService.getResultadosResumen(
+            Number(this.idEmprendedor),
+            this.encuestaSeleccionada
+          ).pipe(takeUntil(this.destroy$))
+        ),
+        firstValueFrom(
+          this.resultadosService.getResultadosIEPM(
+            Number(this.idEmprendedor),
+            this.encuestaSeleccionadaIEPM
+          ).pipe(takeUntil(this.destroy$))
+        )
+      ]);
+      
+      const promedioICE = dataICE.resumen?.valorIceTotal || 0;
+      const promedioIEPM = dataIEPM.iepm?.iepm || 0;
+      
       this.comparaciones = {
-        correlacion: 0.75,
-        analisis: "Existe una correlación positiva fuerte entre los resultados ICE e IEPM, indicando consistencia en el perfil emprendedor.",
-        recomendacionesIntegradas: [
-          "Aprovechar la alta puntuación en innovación para desarrollar productos únicos",
-          "Combinar creatividad con perseverancia para superar obstáculos",
-          "Usar la motivación alta para mantener el impulso emprendedor"
-        ]
+        correlacion: this.calcularCorrelacion(promedioICE, promedioIEPM),
+        analisis: this.generarAnalisisComparativo(promedioICE, promedioIEPM),
+        recomendacionesIntegradas: this.generarRecomendacionesIntegradas(dataICE, dataIEPM)
       };
+      
+      console.log('Comparaciones:', this.comparaciones);
     } catch (error) {
+      console.error('Error cargando comparaciones:', error);
       this.comparaciones = null;
     }
   }
 
-  // MÉTODOS AUXILIARES PARA GRÁFICAS
+  private getNivelICE(puntaje: number): string {
+    if (puntaje >= 80) return 'Alto';
+    if (puntaje >= 60) return 'Medio-Alto';
+    if (puntaje >= 40) return 'Medio';
+    return 'Bajo';
+  }
+
+  private getNivelIEPM(puntaje: number): string {
+    if (puntaje >= 80) return 'Alto';
+    if (puntaje >= 60) return 'Medio-Alto';
+    if (puntaje >= 40) return 'Medio';
+    return 'Bajo';
+  }
+
+  private getNombreDimension(idDimension: number): string {
+    const nombres: { [key: number]: string } = {
+      1: 'Motivación',
+      2: 'Perseverancia',
+      3: 'Liderazgo',
+      4: 'Creatividad',
+      5: 'Innovación',
+      6: 'Toma de Riesgos',
+      7: 'Autonomía',
+      8: 'Orientación al Logro'
+    };
+    return nombres[idDimension] || `Dimensión ${idDimension}`;
+  }
+
+  private getRecomendacionesPorDimension(idDimension: number, recomendacionesGenerales?: string): string[] {
+    if (recomendacionesGenerales) {
+      return recomendacionesGenerales
+        .split('.')
+        .map(r => r.trim())
+        .filter(r => r.length > 0);
+    }
+    return ['Continuar desarrollando esta dimensión'];
+  }
+
+  private calcularCorrelacion(ice: number, iepm: number): number {
+    const max = Math.max(ice, iepm);
+    const min = Math.min(ice, iepm);
+    return max > 0 ? min / max : 0;
+  }
+
+  private generarAnalisisComparativo(ice: number, iepm: number): string {
+    const diferencia = Math.abs(ice - iepm);
+    
+    if (diferencia < 10) {
+      return 'Existe una alta consistencia entre los resultados ICE e IEPM, indicando un perfil emprendedor equilibrado.';
+    } else if (diferencia < 20) {
+      return 'Se observa una correlación moderada entre ICE e IEPM, con algunas áreas de oportunidad.';
+    } else {
+      return 'Los resultados muestran diferencias significativas entre ICE e IEPM, sugiriendo áreas específicas de desarrollo.';
+    }
+  }
+
+  private generarRecomendacionesIntegradas(dataICE: any, dataIEPM: any): string[] {
+    const recomendaciones: string[] = [];
+    
+    const valorICE = dataICE.resumen?.valorIceTotal || 0;
+    const valorIEPM = dataIEPM.iepm?.iepm || 0;
+    
+    if (valorICE > 70) {
+      recomendaciones.push('Aprovechar la alta capacidad de innovación para desarrollar productos únicos');
+    } else if (valorICE < 50) {
+      recomendaciones.push('Enfocarse en fortalecer las dimensiones de creatividad e innovación');
+    }
+    
+    if (valorIEPM > 70) {
+      recomendaciones.push('Utilizar el fuerte perfil emprendedor para liderar nuevos proyectos');
+    } else if (valorIEPM < 50) {
+      recomendaciones.push('Trabajar en el desarrollo de habilidades emprendedoras fundamentales');
+    }
+    
+    if (dataIEPM.accionMejora?.recomendaciones) {
+      const recsIEPM = dataIEPM.accionMejora.recomendaciones
+        .split('.')
+        .map((r: string) => r.trim())
+        .filter((r: string) => r.length > 0);
+      recomendaciones.push(...recsIEPM);
+    }
+    
+    return recomendaciones.length > 0 ? recomendaciones : ['Continuar desarrollando habilidades emprendedoras'];
+  }
+
+  private generarColores(cantidad: number): string[] {
+    const coloresBase = ['#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c', '#34495e', '#16a085'];
+    return Array(cantidad).fill(0).map((_, i) => coloresBase[i % coloresBase.length]);
+  }
 
   getBarPercentage(value: number, data: number[]): number {
     if (!data || data.length === 0) return 0;
@@ -397,7 +507,6 @@ export class InformacionResultadosPage implements OnInit, OnDestroy {
     return Math.abs(value);
   }
 
-  // Navegación general
   navigateToHome(): void {
     this.router.navigate(['/home']);
   }
@@ -406,7 +515,6 @@ export class InformacionResultadosPage implements OnInit, OnDestroy {
     this.router.navigate(['/ventana-encuestas', this.idEmprendedor]);
   }
 
-  // Métodos de utilidad
   formatearFecha(fecha: string): string {
     if (!fecha) return 'N/A';
     try {
@@ -457,6 +565,8 @@ export class InformacionResultadosPage implements OnInit, OnDestroy {
     console.log('Encuestas IEPM:', this.encuestasIEPM?.length || 0);
     console.log('ICE seleccionada:', this.encuestaSeleccionada);
     console.log('IEPM seleccionada:', this.encuestaSeleccionadaIEPM);
+    console.log('Resultados ICE cargados:', this.resultadosICE.length);
+    console.log('Resultados IEPM cargados:', this.resultadosIEPM.length);
   }
 
   private async handleError(message: string): Promise<void> {

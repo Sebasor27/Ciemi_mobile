@@ -3,7 +3,6 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, map, retry } from 'rxjs/operators';
 
-// Interfaces para tipado fuerte
 interface EncuestaResponse {
   idEncuesta: number;
   fechaEvaluacion: string;
@@ -57,7 +56,6 @@ export class ResultadosService {
 
   constructor(private http: HttpClient) {}
 
-  //  Obtener indicadores y dimensiones detallados
   getIndicadoresDimensiones(): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/PreguntasIepm/detailed`, { headers: this.headers })
       .pipe(
@@ -66,7 +64,6 @@ export class ResultadosService {
       );
   }
 
-  //  Obtener encuestas ICE de un emprendedor
   getEncuestas(idEmprendedor: number): Observable<EncuestaResponse[]> {
     this.validateId(idEmprendedor, 'idEmprendedor');
 
@@ -78,7 +75,6 @@ export class ResultadosService {
       );
   }
 
-  //  Obtener encuestas IEPM de un emprendedor
   getEncuestasIEPM(idEmprendedor: number): Observable<EncuestaResponse[]> {
     this.validateId(idEmprendedor, 'idEmprendedor');
 
@@ -90,7 +86,6 @@ export class ResultadosService {
       );
   }
 
-  //  Obtener datos del emprendedor
   getEmprendedor(idEmprendedor: number): Observable<EmprendedorResponse> {
     this.validateId(idEmprendedor, 'idEmprendedor');
 
@@ -102,7 +97,6 @@ export class ResultadosService {
       );
   }
 
-  //  Obtener resultados resumen ICE
   getResultadosResumen(idEmprendedor: number, idEncuesta: number): Observable<ResultadoResumenResponse> {
     this.validateId(idEmprendedor, 'idEmprendedor');
     this.validateId(idEncuesta, 'idEncuesta');
@@ -115,7 +109,6 @@ export class ResultadosService {
       );
   }
 
-  //  Obtener resultados IEPM
   getResultadosIEPM(idEmprendedor: number, idEncuesta: number): Observable<ResultadoIEPMResponse> {
     this.validateId(idEmprendedor, 'idEmprendedor');
     this.validateId(idEncuesta, 'idEncuesta');
@@ -127,8 +120,35 @@ export class ResultadosService {
         catchError(this.handleError('getResultadosIEPM'))
       );
   }
-  //  Transformaciones
+
+  getResultadosIcePorId(idResultado: number): Observable<any> {
+    this.validateId(idResultado, 'idResultado');
+    
+    return this.http.get<any>(`${this.apiUrl}/ResultadosIce/${idResultado}`, { headers: this.headers })
+      .pipe(
+        retry(2),
+        catchError(this.handleError('getResultadosIcePorId'))
+      );
+  }
+
+  getRespuestasIepm(idEncuesta: number, idEmprendedor: number): Observable<any> {
+    this.validateId(idEncuesta, 'idEncuesta');
+    this.validateId(idEmprendedor, 'idEmprendedor');
+    
+    return this.http.get<any>(
+      `${this.apiUrl}/RespuestasIepm/encuesta/${idEncuesta}/emprendedor/${idEmprendedor}`, 
+      { headers: this.headers }
+    ).pipe(
+      retry(2),
+      catchError(this.handleError('getRespuestasIepm'))
+    );
+  }
+
   private transformEncuestasData = (data: any[]): EncuestaResponse[] => {
+    if (!Array.isArray(data)) {
+      console.warn('transformEncuestasData: datos no son array', data);
+      return [];
+    }
     return data.map(encuesta => ({
       idEncuesta: encuesta.idEncuesta || 0,
       fechaEvaluacion: encuesta.fechaEvaluacion || new Date().toISOString(),
@@ -140,15 +160,15 @@ export class ResultadosService {
     return {
       idEmprendedor: data.idEmprendedor || 0,
       nombre: data.nombre || 'Sin nombre',
-      email: data.email || undefined
+      email: data.email || data.correo || undefined
     };
   }
 
   private transformResultadosResumen = (data: any): ResultadoResumenResponse => {
     return {
-      resultados: Array.isArray(data.resultados) ? data.resultados : [],
+      resultados: Array.isArray(data.resultados) ? data.resultados : (Array.isArray(data) ? data : []),
       resumen: {
-        valorIceTotal: data.resumen?.valorIceTotal || 0
+        valorIceTotal: data.resumen?.valorIceTotal || data.valorTotal || 0
       }
     };
   }
@@ -156,8 +176,8 @@ export class ResultadosService {
   private transformResultadosIEPM = (data: any): ResultadoIEPMResponse => {
     return {
       iepm: {
-        iepm: data.iepm?.iepm || 0,
-        valoracion: data.iepm?.valoracion || 'No disponible'
+        iepm: data.iepm?.iepm || data.valorIepm || 0,
+        valoracion: data.iepm?.valoracion || data.nivel || 'No disponible'
       },
       dimensiones: Array.isArray(data.dimensiones) ? data.dimensiones : [],
       indicadores: Array.isArray(data.indicadores) ? data.indicadores : [],
@@ -170,30 +190,35 @@ export class ResultadosService {
     };
   }
 
-  //  Validaciones
   private validateId(id: number, paramName: string): void {
     if (!id || id <= 0 || isNaN(id)) {
       throw new Error(`${paramName} debe ser un número válido mayor a 0`);
     }
   }
 
-  //  Manejo de errores
   private handleError = (operation: string) => {
     return (error: HttpErrorResponse): Observable<never> => {
       console.error(`Error en ${operation}:`, error);
+      console.error('Status:', error.status);
+      console.error('URL:', error.url);
+      console.error('Message:', error.message);
+      
       let userMessage = 'Error desconocido';
+      
       if (error.status === 0) {
-        userMessage = 'Error de conexión. Verifique su conexión a internet.';
+        userMessage = 'Error de conexión. Verifique que el servidor esté ejecutándose.';
+      } else if (error.status === 404) {
+        userMessage = 'Endpoint no encontrado. Verifique la URL del API.';
       } else if (error.status >= 400 && error.status < 500) {
         userMessage = 'Error en la solicitud. Verifique los datos enviados.';
       } else if (error.status >= 500) {
         userMessage = 'Error del servidor. Intente más tarde.';
       }
+      
       return throwError(() => new Error(`${operation}: ${userMessage}`));
     };
   }
 
-  //  Métodos utilitarios
   checkApiHealth(): Observable<boolean> {
     return this.http.get(`${this.apiUrl}/health`, { headers: this.headers })
       .pipe(
